@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
@@ -32,11 +33,30 @@ class CategoriesScreen extends ConsumerWidget {
           snap: true,
           actions: [
             IconButton(
+              tooltip: 'Odśwież',
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref.invalidate(categoriesProvider);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Odświeżam dane…'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+            ),
+            IconButton(
               tooltip: 'Dodaj kategorię',
               icon: const Icon(Icons.add),
               onPressed: () => _openCreateSheet(context),
             ),
           ],
+        ),
+        CupertinoSliverRefreshControl(
+          onRefresh: () async {
+            ref.invalidate(categoriesProvider);
+            await Future<void>.delayed(const Duration(milliseconds: 500));
+          },
         ),
         async.when(
           loading: () => const SliverFillRemaining(
