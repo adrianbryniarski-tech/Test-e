@@ -1,0 +1,142 @@
+import 'dart:async';
+
+import 'package:nasz_budzet_domowy/core/offline/local_db.dart';
+import 'package:nasz_budzet_domowy/core/offline/pending_transaction.dart';
+import 'package:sqflite/sqflite.dart';
+
+/// CRUD na tabeli `pending_transactions` + stream zmian.
+///
+/// Stream jest tu broadcast'em na `StreamController` ręcznie pingowanym
+/// przy każdej mutacji DAO. Sqflite nie ma natywnego notify-on-change,
+/// więc utrzymujemy go w pamięci. Jeden DAO = jeden controller = OK
+/// bo robimy singleton w providerze.
+class PendingOpsDao {
+  PendingOpsDao(this._db);
+
+  final LocalDb _db;
+  final StreamController<void> _changes = StreamController<void>.broadcast();
+
+  /// Wstawia nowy pending — kolizja `client_op_id` (już zakolejkowany)
+  /// jest ignorowana (idempotency: ten sam op zapisany dwa razy).
+  Future<void> enqueue(PendingTransaction op) async {
+    final db = await _db.database;
+    await db.insert(
+      'pending_transactions',
+      op.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+    _changes.add(null);
+  }
+
+  Future<List<PendingTransaction>> listAll() async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'pending_transactions',
+      orderBy: 'enqueued_at ASC',
+    );
+    return rows.map(PendingTransaction.fromMap).toList();
+  }
+
+  Future<List<PendingTransaction>> listForHousehold(String householdId) async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'pending_transactions',
+      where: 'household_id = ?',
+      whereArgs: [householdId],
+      orderBy: 'enqueued_at ASC',
+    );
+    return rows.map(PendingTransaction.fromMap).toList();
+  }
+
+  Future<int> countAll() async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) AS n FROM pending_transactions',
+    );
+    return (rows.first['n']! as num).toInt();
+  }
+
+  Future<int> countWithErrors() async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) AS n FROM pending_transactions '
+      'WHERE last_error IS NOT NULL',
+    );
+    return (rows.first['n']! as num).toInt();
+  }
+
+  Future<void> markFailure(String clientOpId, String error) async {
+    final db = await _db.database;
+    await db.rawUpdate(
+      'UPDATE pending_transactions '
+      'SET last_error = ?, retry_count = retry_count + 1 '
+      'WHERE client_op_id = ?',
+      [error, clientOpId],
+    );
+    _changes.add(null);
+  }
+
+  Future<void> remove(String clientOpId) async {
+    final db = await _db.database;
+    await db.delete(
+      'pending_transactions',
+      where: 'client_op_id = ?',
+      whereArgs: [clientOpId],
+    );
+    _changes.add(null);
+  }
+
+  /// Stream odpalany na każdą mutację — konsument robi `listForHousehold`
+  /// żeby dostać świeżą listę. Pierwsza wartość emitowana natychmiast
+  /// po subskrypcji żeby UI nie wisiał na pustym ekranie.
+  Stream<List<PendingTransaction>> watchForHousehold(String householdId) {
+    late StreamController<List<PendingTransaction>> ctrl;
+    StreamSubscription<void>? sub;
+
+    Future<void> emit() async {
+      if (ctrl.isClosed) return;
+      ctrl.add(await listForHousehold(householdId));
+    }
+
+    ctrl = StreamController<List<PendingTransaction>>(
+      onListen: () {
+        sub = _changes.stream.listen((_) => emit());
+        emit();
+      },
+      onCancel: () async {
+        await sub?.cancel();
+      },
+    );
+    return ctrl.stream;
+  }
+
+  /// Stream sumy operacji w kolejce (po household-zie nie filtrujemy —
+  /// status indicator pokazuje globalny stan, nie per gospodarstwo).
+  Stream<({int total, int errors})> watchCounts() {
+    late StreamController<({int total, int errors})> ctrl;
+    StreamSubscription<void>? sub;
+
+    Future<void> emit() async {
+      if (ctrl.isClosed) return;
+      final total = await countAll();
+      final errors = await countWithErrors();
+      ctrl.add((total: total, errors: errors));
+    }
+
+    ctrl = StreamController<({int total, int errors})>(
+      onListen: () {
+        sub = _changes.stream.listen((_) => emit());
+        emit();
+      },
+      onCancel: () async {
+        await sub?.cancel();
+      },
+    );
+    return ctrl.stream;
+  }
+
+  /// Tylko dla testów — nie używać w runtime.
+  void dispose() {
+    _changes.close();
+  }
+}

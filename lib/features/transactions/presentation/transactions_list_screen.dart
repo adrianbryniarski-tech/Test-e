@@ -8,6 +8,7 @@ import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/sync_status_indicator.dart';
 
 /// Lista transakcji bieżącego gospodarstwa.
 /// Renderuje się jako CustomScrollView (bez własnego Scaffold) —
@@ -28,6 +29,7 @@ class TransactionsListScreen extends ConsumerWidget {
           floating: true,
           snap: true,
           actions: [
+            const SyncStatusIndicator(),
             IconButton(
               tooltip: 'Wyloguj',
               icon: const Icon(Icons.logout),
@@ -249,21 +251,39 @@ class _TransactionRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      (transaction.description?.isNotEmpty ?? false)
-                          ? transaction.description!
-                          : (category?.name ?? 'Transakcja'),
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        if (transaction.isPending) ...[
+                          Icon(
+                            Icons.schedule,
+                            size: 14,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Expanded(
+                          child: Text(
+                            (transaction.description?.isNotEmpty ?? false)
+                                ? transaction.description!
+                                : (category?.name ?? 'Transakcja'),
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     if (category != null)
                       Text(
-                        category!.name,
+                        transaction.isPending
+                            ? '${category!.name} • czeka na sync'
+                            : category!.name,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: transaction.isPending
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                   ],

@@ -60,6 +60,7 @@ class Transaction {
     this.note,
     this.importId,
     this.clientOpId,
+    this.isPending = false,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
@@ -95,6 +96,10 @@ class Transaction {
   final String dedupHash;
   final String? clientOpId;
   final DateTime createdAt;
+
+  /// `true` gdy transakcja siedzi w lokalnej kolejce i nie była jeszcze
+  /// wepchnięta do Supabase. Tylko dla wyświetlania w UI (⏳ vs ☁️).
+  final bool isPending;
 }
 
 /// Hashowanie do twardej deduplikacji.

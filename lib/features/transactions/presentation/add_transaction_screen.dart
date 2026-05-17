@@ -135,6 +135,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     switch (result) {
       case TransactionWriteSuccess():
         context.pop();
+      case TransactionWriteQueued():
+        // Brak sieci → zapisane lokalnie. UX: zamykamy formularz tak samo
+        // jak przy sukcesie, ale dorzucamy snackbar — user musi widzieć
+        // że to "czeka" inaczej będzie myślał że zapis się powiódł.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Zapisane offline — zsynchronizuje się gdy wróci internet.',
+            ),
+          ),
+        );
+        context.pop();
       case TransactionDuplicate():
         setState(
           () => _errorMessage = 'Ta sama transakcja jest już zapisana w bazie.',

@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:nasz_budzet_domowy/app/router.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/core/env.dart';
+import 'package:nasz_budzet_domowy/core/offline/sync_providers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
@@ -25,11 +26,26 @@ Future<void> main() async {
   runApp(const ProviderScope(child: NaszBudzetDomowyApp()));
 }
 
-class NaszBudzetDomowyApp extends ConsumerWidget {
+class NaszBudzetDomowyApp extends ConsumerStatefulWidget {
   const NaszBudzetDomowyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NaszBudzetDomowyApp> createState() =>
+      _NaszBudzetDomowyAppState();
+}
+
+class _NaszBudzetDomowyAppState extends ConsumerState<NaszBudzetDomowyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Worker odpalamy raz przy starcie. Subskrypcja na connectivity
+    // żyje przez cały lifecycle apki — nie ma sensu re-startować jej
+    // przy każdym rebuildzie widgeta.
+    ref.read(syncWorkerProvider).start();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'Nasz budżet domowy',

@@ -1,3 +1,8 @@
+import 'dart:async';
+
+import 'package:nasz_budzet_domowy/core/offline/pending_ops_dao.dart';
+import 'package:nasz_budzet_domowy/core/offline/pending_transaction.dart';
+import 'package:nasz_budzet_domowy/core/offline/sync_worker.dart';
 import 'package:nasz_budzet_domowy/core/supabase/supabase_client.dart';
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,6 +18,12 @@ class TransactionWriteSuccess extends TransactionWriteResult {
   final Transaction transaction;
 }
 
+/// Zapisane lokalnie — czeka na wysyłkę gdy wróci sieć.
+class TransactionWriteQueued extends TransactionWriteResult {
+  const TransactionWriteQueued(this.pending);
+  final PendingTransaction pending;
+}
+
 /// Duplikat — `UNIQUE(household_id, dedup_hash)` zwrócił 23505.
 class TransactionDuplicate extends TransactionWriteResult {
   const TransactionDuplicate();
@@ -23,15 +34,26 @@ class TransactionWriteFailure extends TransactionWriteResult {
   final String message;
 }
 
-/// CRUD + realtime na `transactions`.
+/// CRUD + realtime na `transactions` z fallbackiem do lokalnej kolejki.
+///
+/// Flow `insert()`:
+/// 1. Liczy `dedup_hash` + `client_op_id`.
+/// 2. Próbuje wepchnąć do Supabase.
+/// 3a. Sukces → `TransactionWriteSuccess` (Supabase realtime przyniesie
+///     rekord do listy w drugim kanale).
+/// 3b. 23505 → `TransactionDuplicate` (UI: "ten zapis już jest").
+/// 3c. Sieciowy błąd → zapis w lokalnej kolejce + `TransactionWriteQueued`
+///     (UI: "Zapisane offline — zsynchronizuje gdy wróci internet").
+/// 3d. RLS / inny błąd PG → `TransactionWriteFailure(message)`.
 class TransactionRepository {
-  TransactionRepository() : _uuid = const Uuid();
+  TransactionRepository(this._pendingOpsDao, this._syncWorker)
+      : _uuid = const Uuid();
 
+  final PendingOpsDao _pendingOpsDao;
+  final SyncWorker _syncWorker;
   final Uuid _uuid;
 
   /// Strumień transakcji gospodarstwa, sortowany malejąco po dacie.
-  /// `supabase.from(...).stream()` jest auto-subskrybowany do realtime,
-  /// czyli emit po każdym INSERT/UPDATE/DELETE z innego klienta.
   Stream<List<Transaction>> watchAll(String householdId) {
     return supabase
         .from('transactions')
@@ -41,12 +63,6 @@ class TransactionRepository {
         .map((rows) => rows.map(Transaction.fromJson).toList());
   }
 
-  /// Insert nowej transakcji.
-  ///
-  /// Klient kalkuluje `dedup_hash` (twarda deduplikacja) oraz
-  /// `client_op_id` (idempotency dla offline kolejki — Part B Ticketu 4).
-  /// Łapanie kodu Postgres 23505 → typed `TransactionDuplicate`
-  /// żeby UI mógł pokazać "to już jest w bazie".
   Future<TransactionWriteResult> insert({
     required String householdId,
     required DateTime occurredAt,
@@ -69,44 +85,47 @@ class TransactionRepository {
     );
     final clientOpId = _uuid.v4();
 
+    final pending = PendingTransaction(
+      clientOpId: clientOpId,
+      householdId: householdId,
+      createdBy: user.id,
+      occurredAt: occurredAt,
+      amountCents: amountCents,
+      type: type,
+      categoryId: categoryId,
+      description: description,
+      note: note,
+      source: source,
+      dedupHash: dedupHash,
+      enqueuedAt: DateTime.now(),
+      retryCount: 0,
+    );
+
     try {
       final row = await supabase
           .from('transactions')
-          .insert({
-            'household_id': householdId,
-            'created_by': user.id,
-            'occurred_at': _dateOnly(occurredAt),
-            'amount_cents': amountCents,
-            'type': type.toDbValue(),
-            'category_id': categoryId,
-            'description': description,
-            'note': note,
-            'source': source.toDbValue(),
-            'dedup_hash': dedupHash,
-            'client_op_id': clientOpId,
-          })
+          .insert(pending.toSupabaseInsert())
           .select()
           .single();
       return TransactionWriteSuccess(Transaction.fromJson(row));
     } on PostgrestException catch (e) {
-      // 23505 = unique_violation. Może odpalić zarówno `dedup_hash`
-      // jak i `client_op_id` (oba mają UNIQUE). Z punktu widzenia
-      // usera oba znaczą "ten zapis już jest" — komunikat ten sam.
+      // 23505 = duplikat (dedup_hash lub client_op_id). UX: "już jest".
       if (e.code == '23505') return const TransactionDuplicate();
-      return TransactionWriteFailure(
-        'Nie udało się zapisać: ${e.message}',
-      );
-    } on Object catch (e) {
-      return TransactionWriteFailure('Błąd zapisu: $e');
+      // Inny błąd PG (RLS, foreign key, walidacja) — nie ma sensu kolejkować,
+      // bo retry da ten sam wynik.
+      return TransactionWriteFailure('Nie udało się zapisać: ${e.message}');
+    } on Object catch (_) {
+      // Sieciowy / SocketException / timeout — kolejkujemy lokalnie.
+      // SyncWorker spróbuje ponownie po odzyskaniu połączenia.
+      await _pendingOpsDao.enqueue(pending);
+      // Trigger drain — jeśli sieć już wróciła w międzyczasie, od razu
+      // złapiemy okazję bez czekania na connectivity event.
+      unawaited(_syncWorker.syncNow());
+      return TransactionWriteQueued(pending);
     }
   }
 
   Future<void> delete(String id) async {
     await supabase.from('transactions').delete().eq('id', id);
-  }
-
-  static String _dateOnly(DateTime dt) {
-    final iso = DateTime.utc(dt.year, dt.month, dt.day).toIso8601String();
-    return iso.substring(0, 10); // YYYY-MM-DD
   }
 }
