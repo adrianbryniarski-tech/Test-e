@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
+import 'package:nasz_budzet_domowy/core/offline/sync_providers.dart';
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
@@ -199,7 +200,7 @@ class _DateGroup extends StatelessWidget {
             child: Column(
               children: [
                 for (final t in transactions)
-                  _TransactionRow(
+                  _DismissibleTransactionRow(
                     transaction: t,
                     category: categoriesById[t.categoryId],
                     isLast: t == transactions.last,
@@ -219,6 +220,103 @@ class _DateGroup extends StatelessWidget {
     if (date == today) return 'Dziś';
     if (date == yesterday) return 'Wczoraj';
     return DateFormat('EEEE, d MMMM y', 'pl_PL').format(date);
+  }
+}
+
+/// Wrapper z Dismissible — swipe w lewo → confirmation dialog → delete.
+/// Działa zarówno na pending (z DAO) jak i zsynchronizowanych transakcjach
+/// (przez TransactionRepository).
+class _DismissibleTransactionRow extends ConsumerWidget {
+  const _DismissibleTransactionRow({
+    required this.transaction,
+    required this.category,
+    required this.isLast,
+  });
+
+  final Transaction transaction;
+  final Category? category;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Dismissible(
+      key: ValueKey('tx-${transaction.id}'),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => _confirm(context),
+      onDismissed: (_) async {
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          if (transaction.isPending) {
+            // id pending'a == clientOpId — usuwamy z lokalnej kolejki.
+            await ref.read(pendingOpsDaoProvider).remove(transaction.id);
+          } else {
+            await ref
+                .read(transactionRepositoryProvider)
+                .delete(transaction.id);
+          }
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Transakcja usunięta')),
+          );
+        } on Object catch (e) {
+          messenger.showSnackBar(
+            SnackBar(content: Text('Nie udało się usunąć: $e')),
+          );
+        }
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        color: theme.colorScheme.errorContainer,
+        child: Icon(
+          Icons.delete_outline,
+          color: theme.colorScheme.onErrorContainer,
+        ),
+      ),
+      child: _TransactionRow(
+        transaction: transaction,
+        category: category,
+        isLast: isLast,
+      ),
+    );
+  }
+
+  Future<bool> _confirm(BuildContext context) async {
+    final amount = (transaction.amountCents / 100).toStringAsFixed(2);
+    final sign = transaction.type == TransactionType.income ? '+' : '−';
+    final hasDescription =
+        transaction.description?.trim().isNotEmpty ?? false;
+    final label = hasDescription
+        ? transaction.description!.trim()
+        : (category?.name ?? 'transakcja');
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return AlertDialog(
+          title: const Text('Usunąć transakcję?'),
+          content: Text(
+            '$sign$amount zł — $label\n\n'
+            'Tej operacji nie da się cofnąć.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Anuluj'),
+            ),
+            FilledButton.tonal(
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.errorContainer,
+                foregroundColor: theme.colorScheme.onErrorContainer,
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Usuń'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
   }
 }
 
