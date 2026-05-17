@@ -72,7 +72,6 @@ enum AppAnimation {
 class AnimationSettings {
   const AnimationSettings(this.enabled);
 
-  /// `null` w mapie = "nie wybrałem, użyj domyślnego (=on)".
   factory AnimationSettings.defaults() {
     return AnimationSettings({
       for (final a in AppAnimation.values) a: true,
