@@ -27,14 +27,42 @@ jobs:
       # (każdy clone Flutter dogenerowuje je sam). To wystarczy żeby reszta
       # zatwierdzona w repo (build.gradle.kts, MainActivity.kt, styles, mipmapy,
       # AndroidManifest.xml) miała kompletny scaffolding do buildu.
+      #
+      # Retry: pub.dev miewa transient socket errors (exit code 69).
+      # 3 próby z exponential backoff — wystarczy w 99% przypadków.
       - name: Bootstrap gradle wrapper + local.properties
         run: |
-          flutter create --platforms=android \
-            --org=pl.naszbudzetdomowy \
-            --project-name=nasz_budzet_domowy .
+          for attempt in 1 2 3; do
+            if flutter create --platforms=android \
+                 --org=pl.naszbudzetdomowy \
+                 --project-name=nasz_budzet_domowy .; then
+              echo "✅ flutter create OK (attempt $attempt)"
+              break
+            fi
+            if [ "$attempt" = "3" ]; then
+              echo "❌ flutter create padło 3x — pub.dev nieosiągalne"
+              exit 1
+            fi
+            wait=$((attempt * 15))
+            echo "⏳ flutter create padło (attempt $attempt) — czekam ${wait}s"
+            sleep $wait
+          done
 
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          for attempt in 1 2 3; do
+            if flutter pub get; then
+              echo "✅ pub get OK (attempt $attempt)"
+              break
+            fi
+            if [ "$attempt" = "3" ]; then
+              echo "❌ pub get padło 3x — pub.dev nieosiągalne"
+              exit 1
+            fi
+            wait=$((attempt * 15))
+            echo "⏳ pub get padło (attempt $attempt) — czekam ${wait}s"
+            sleep $wait
+          done
 
       # AGP 8 nie akceptuje atrybutu `package="..."` w AndroidManifest.xml
       # — namespace MUSI być w build.gradle. Stare pluginy Flutter (Vosk,
