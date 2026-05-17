@@ -7,8 +7,10 @@ import 'package:nasz_budzet_domowy/features/categories/application/category_prov
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
+import 'package:nasz_budzet_domowy/features/transactions/application/voice_parser.dart';
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction_repository.dart';
+import 'package:nasz_budzet_domowy/features/transactions/presentation/widgets/voice_input_button.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
@@ -39,6 +41,23 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   DateTime _occurredAt = DateTime.now();
   bool _isSaving = false;
   String? _errorMessage;
+
+  /// Wypełnia formularz wynikiem parsowania głosu.
+  void _applyVoiceResult(VoiceParseResult result) {
+    setState(() {
+      if (result.amountCents != null) {
+        _amountController.text =
+            (result.amountCents! / 100).toStringAsFixed(2);
+      }
+      if (result.occurredAt != null) {
+        _occurredAt = result.occurredAt!;
+      }
+      if (result.description != null) {
+        _descriptionController.text = result.description!;
+      }
+      _type = result.type;
+    });
+  }
 
   @override
   void dispose() {
@@ -136,8 +155,19 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
     final dateLabel = DateFormat('d MMMM y', 'pl_PL').format(_occurredAt);
 
+    final allCategories = categoriesAsync.value ?? const <Category>[];
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Nowa transakcja')),
+      appBar: AppBar(
+        title: const Text('Nowa transakcja'),
+        actions: [
+          VoiceInputButton(
+            categories: allCategories,
+            onResult: _applyVoiceResult,
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
