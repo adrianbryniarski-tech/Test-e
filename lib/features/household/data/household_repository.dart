@@ -104,6 +104,18 @@ class HouseholdRepository {
     return rows.map(HouseholdMember.fromJson).toList();
   }
 
+  /// Stream członków — używać żeby auto-update przy dołączeniu nowego
+  /// członka (Realtime przyniesie INSERT na `household_members`).
+  /// Wymaga migracji 0005 (publication supabase_realtime + table).
+  Stream<List<HouseholdMember>> watchMembers(String householdId) {
+    return supabase
+        .from('household_members')
+        .stream(primaryKey: ['household_id', 'user_id'])
+        .eq('household_id', householdId)
+        .order('joined_at')
+        .map((rows) => rows.map(HouseholdMember.fromJson).toList());
+  }
+
   /// Zwraca metadata gospodarstwa (nazwa) bez całej listy członków.
   Future<HouseholdInfo?> info(String householdId) async {
     try {

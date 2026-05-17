@@ -27,10 +27,11 @@ final householdInfoProvider =
   return ref.watch(householdRepositoryProvider).info(householdId);
 });
 
-/// Lista członków gospodarstwa (user_id, role, joined_at). Każdy member
-/// widzi listę pozostałych — RLS w `household_members` to pozwala.
+/// Lista członków gospodarstwa (user_id, role, joined_at) — STREAM.
+/// Realtime INSERT przy dołączeniu nowego członka (migracja 0005 dodała
+/// `household_members` do publication `supabase_realtime`).
 final householdMembersProvider =
-    FutureProvider.family<List<HouseholdMember>, String>(
-        (ref, householdId) async {
-  return ref.watch(householdRepositoryProvider).members(householdId);
+    StreamProvider.family<List<HouseholdMember>, String>(
+        (ref, householdId) {
+  return ref.watch(householdRepositoryProvider).watchMembers(householdId);
 });
