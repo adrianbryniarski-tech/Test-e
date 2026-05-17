@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nasz_budzet_domowy/app/home_shell.dart';
 import 'package:nasz_budzet_domowy/features/auth/presentation/sign_in_screen.dart';
-import 'package:nasz_budzet_domowy/features/auth/presentation/verify_otp_screen.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/household/presentation/create_household_screen.dart';
 import 'package:nasz_budzet_domowy/features/household/presentation/invitation_share_screen.dart';
@@ -79,15 +78,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/sign-in',
         builder: (context, state) => const SignInScreen(),
-        routes: [
-          GoRoute(
-            path: 'verify',
-            builder: (context, state) {
-              final email = state.extra as String? ?? '';
-              return VerifyOtpScreen(email: email);
-            },
-          ),
-        ],
       ),
       GoRoute(
         path: '/onboarding',

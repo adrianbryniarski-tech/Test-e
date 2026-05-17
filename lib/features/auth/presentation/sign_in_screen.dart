@@ -1,18 +1,13 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
+import 'package:nasz_budzet_domowy/features/auth/data/auth_repository.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
 
-/// Pierwszy ekran auth: prosi o email, wysyła kod OTP, przechodzi do
-/// `VerifyOtpScreen`.
-///
-/// Brak osobnego "Sign up" / "Sign in" — Supabase przy `shouldCreateUser:
-/// true` tworzy konto przy pierwszym OTP automatycznie.
+/// Ekran logowania / rejestracji email+hasło. Toggle Login ↔ Sign-up,
+/// po sukcesie router automatycznie przerzuca na onboarding lub home.
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
 
@@ -20,10 +15,15 @@ class SignInScreen extends ConsumerStatefulWidget {
   ConsumerState<SignInScreen> createState() => _SignInScreenState();
 }
 
+enum _Mode { signIn, signUp }
+
 class _SignInScreenState extends ConsumerState<SignInScreen> {
-  final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _isSending = false;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  _Mode _mode = _Mode.signIn;
+  bool _showPassword = false;
+  bool _submitting = false;
   String? _errorMessage;
 
   static final _emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
@@ -31,47 +31,55 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _sendOtp() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
     setState(() {
-      _isSending = true;
+      _submitting = true;
       _errorMessage = null;
     });
 
-    try {
-      await ref.read(authRepositoryProvider).sendEmailOtp(email);
-      if (!mounted) return;
-      // `push` zwraca Future<T?> z value pop-a — nie potrzebujemy.
-      unawaited(context.push('/sign-in/verify', extra: email));
-    } on Object catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = _humanizeError(e));
-    } finally {
-      if (mounted) setState(() => _isSending = false);
-    }
+    final repo = ref.read(authRepositoryProvider);
+    final result = _mode == _Mode.signIn
+        ? await repo.signInWithPassword(email: email, password: password)
+        : await repo.signUp(email: email, password: password);
+
+    if (!mounted) return;
+    setState(() {
+      _submitting = false;
+      _errorMessage = _resultToMessage(result);
+    });
+    // Sukces → router (via onAuthStateChange) przerzuci na onboarding/home.
   }
 
-  String _humanizeError(Object e) {
-    // Supabase rate limit (30 maili/h na free tier) → 429.
-    final raw = e.toString();
-    if (raw.contains('rate limit') || raw.contains('429')) {
-      return 'Wysłano za dużo prób. Spróbuj ponownie za chwilę.';
-    }
-    return 'Nie udało się wysłać kodu. Sprawdź połączenie i spróbuj ponownie.';
+  String? _resultToMessage(AuthResult r) {
+    return switch (r) {
+      AuthSuccess() => null,
+      AuthInvalidCredentials() =>
+        'Email lub hasło niepoprawne. Sprawdź dane i spróbuj ponownie.',
+      AuthEmailAlreadyExists() =>
+        'Konto z tym emailem już istnieje. Wybierz "Zaloguj się".',
+      AuthWeakPassword() => 'Hasło musi mieć co najmniej 6 znaków.',
+      AuthGenericFailure(:final message) =>
+        'Nie udało się: $message',
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isSignIn = _mode == _Mode.signIn;
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: SingleChildScrollView(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Form(
             key: _formKey,
             child: Column(
@@ -84,18 +92,42 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Zaloguj się — wyślemy Ci 6-cyfrowy kod na email.',
+                  isSignIn
+                      ? 'Zaloguj się — email i hasło.'
+                      : 'Załóż konto — email i hasło (min. 6 znaków).',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
+                SegmentedButton<_Mode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: _Mode.signIn,
+                      label: Text('Zaloguj się'),
+                      icon: Icon(Icons.login),
+                    ),
+                    ButtonSegment(
+                      value: _Mode.signUp,
+                      label: Text('Załóż konto'),
+                      icon: Icon(Icons.person_add_alt),
+                    ),
+                  ],
+                  selected: {_mode},
+                  onSelectionChanged: _submitting
+                      ? null
+                      : (s) => setState(() {
+                            _mode = s.first;
+                            _errorMessage = null;
+                          }),
+                ),
+                const SizedBox(height: 24),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
                   enableSuggestions: false,
-                  textInputAction: TextInputAction.done,
+                  textInputAction: TextInputAction.next,
                   inputFormatters: [
                     FilteringTextInputFormatter.deny(RegExp(r'\s')),
                   ],
@@ -112,7 +144,39 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     }
                     return null;
                   },
-                  onFieldSubmitted: (_) => _sendOtp(),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: !_showPassword,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  textInputAction: TextInputAction.done,
+                  decoration: InputDecoration(
+                    labelText: 'Hasło',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      tooltip: _showPassword
+                          ? 'Ukryj hasło'
+                          : 'Pokaż hasło',
+                      icon: Icon(
+                        _showPassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                      onPressed: () =>
+                          setState(() => _showPassword = !_showPassword),
+                    ),
+                  ),
+                  validator: (value) {
+                    final v = value ?? '';
+                    if (v.isEmpty) return 'Wpisz hasło.';
+                    if (!isSignIn && v.length < 6) {
+                      return 'Hasło musi mieć co najmniej 6 znaków.';
+                    }
+                    return null;
+                  },
+                  onFieldSubmitted: (_) => _submit(),
                 ),
                 const SizedBox(height: 16),
                 if (_errorMessage != null) ...[
@@ -120,15 +184,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   const SizedBox(height: 16),
                 ],
                 LoadingFilledButton(
-                  label: 'Wyślij kod',
-                  isLoading: _isSending,
-                  icon: Icons.send_outlined,
-                  onPressed: _sendOtp,
+                  label: isSignIn ? 'Zaloguj się' : 'Załóż konto',
+                  isLoading: _submitting,
+                  icon: isSignIn ? Icons.login : Icons.person_add_alt,
+                  onPressed: _submit,
                 ),
-                const Spacer(),
+                const SizedBox(height: 16),
                 Center(
                   child: Text(
-                    'Bez hasła — kod ważny 1 godzinę.',
+                    isSignIn
+                        ? 'Nie masz konta? Kliknij "Załóż konto" powyżej.'
+                        : 'Masz już konto? Kliknij "Zaloguj się" powyżej.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

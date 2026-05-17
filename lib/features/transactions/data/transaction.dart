@@ -32,6 +32,9 @@ enum TransactionType {
 
   String toDbValue() => name;
 
+  bool get isIncome => this == TransactionType.income;
+  bool get isExpense => this == TransactionType.expense;
+
   static TransactionType fromDbValue(String raw) => switch (raw) {
         'income' => TransactionType.income,
         'expense' => TransactionType.expense,
