@@ -4,16 +4,24 @@ import 'package:nasz_budzet_domowy/app/theme.dart';
 
 void main() {
   group('AppTheme', () {
-    test('light theme has correct seed colors', () {
-      final theme = AppTheme.light;
+    test('light theme dla domyślnego wariantu — Material 3 + brightness',
+        () {
+      final theme = AppTheme.light(AppThemeVariant.spokojny);
       expect(theme.colorScheme.brightness, Brightness.light);
       expect(theme.useMaterial3, isTrue);
     });
 
-    test('dark theme has correct seed colors', () {
-      final theme = AppTheme.dark;
+    test('dark theme dla domyślnego wariantu — Material 3 + brightness', () {
+      final theme = AppTheme.dark(AppThemeVariant.spokojny);
       expect(theme.colorScheme.brightness, Brightness.dark);
       expect(theme.useMaterial3, isTrue);
+    });
+
+    test('każdy z 5 wariantów builduje się bez błędów (light + dark)', () {
+      for (final v in AppThemeVariant.values) {
+        expect(() => AppTheme.light(v), returnsNormally);
+        expect(() => AppTheme.dark(v), returnsNormally);
+      }
     });
   });
 

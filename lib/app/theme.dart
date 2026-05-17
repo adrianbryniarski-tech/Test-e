@@ -1,93 +1,89 @@
 import 'package:flutter/material.dart';
 
-/// Material 3 + paleta low-stimulus dla fintech 2026.
+/// Warianty motywu graficznego. Każdy zachowuje Material 3 jako fundament,
+/// ale różni się paletą, tłem, kształtami i typografią. User wybiera w
+/// Ustawieniach; wybór persistowany w `shared_preferences`.
 ///
-/// Zasady:
-/// - Tło off-white / very-dark-grey (nie czyste białe/czarne — mniej
-///   zmęczenia oczu).
-/// - Akcent zielony (income, success) i czerwony stonowany (expense,
-///   danger) z palety kategorii — spójne z [CategoryPalette] (12 odcieni).
-/// - Big typography (Display L dla salda, Headline M dla nagłówków kart).
-/// - Font Inter (system) — czytelny, neutralny.
+/// Trendy 2026 (zgodnie z research'em):
+/// - Material 3 Expressive — żywe kolory, customizable themes
+/// - Glassmorphism refined — szkło używane "chirurgicznie" na cards
+/// - Minimalism with functionality — biel/przestrzeń, big typography
+/// - Bold typography — duże nagłówki, czytelne cyfry
+/// - Dark mode native — first class citizen
+enum AppThemeVariant {
+  spokojny(
+    label: 'Spokojny',
+    description: 'Niskobodźcowe pastele, kremowe tło. Dla skupionej pracy.',
+  ),
+  expressive(
+    label: 'Material You',
+    description: 'Żywe kolory Material 3 Expressive. Domyślny Android 2026.',
+  ),
+  szklo(
+    label: 'Szkło',
+    description: 'Pastele i półprzezroczystości w stylu glassmorphism.',
+  ),
+  zachod(
+    label: 'Zachód',
+    description: 'Ciepłe gradienty koralu i bursztynu. Domowa atmosfera.',
+  ),
+  mono(
+    label: 'Mono',
+    description: 'Czarno-białe minimum z jednym akcentem. Brutalist 2026.',
+  );
+
+  const AppThemeVariant({required this.label, required this.description});
+
+  final String label;
+  final String description;
+}
+
+/// Builder ThemeData dla wszystkich wariantów. Wybiera między 5 stylami
+/// + jasny/ciemny tryb.
 class AppTheme {
   const AppTheme._();
 
-  static const Color _seedLight = Color(0xFF5B7AB9);
-  static const Color _seedDark = Color(0xFF8FA8E0);
-
-  // Paleta kategorii (12 niskobodźcowych odcieni) — używana spójnie w UI
-  // (lista, pie, chipy, badge). Te same wartości w `category_palette.dart`.
+  // Akcenty INCOME/EXPENSE są STAŁE między motywami — finanse muszą być
+  // czytelne jednakowo wszędzie (zielony = dochód, czerwony = wydatek).
   static const Color incomeAccent = Color(0xFF4AE89E);
   static const Color expenseAccent = Color(0xFFE07A7A);
 
-  // Off-white / very-dark-grey, świadomie nie #FFFFFF / #000000.
-  static const Color _lightBg = Color(0xFFF7F6F2);
-  static const Color _darkBg = Color(0xFF121317);
-  static const Color _lightSurface = Color(0xFFFCFBF8);
-  static const Color _darkSurface = Color(0xFF1A1C22);
+  static ThemeData light(AppThemeVariant variant) =>
+      _build(variant, Brightness.light);
+  static ThemeData dark(AppThemeVariant variant) =>
+      _build(variant, Brightness.dark);
 
-  static ThemeData get light => _build(
-        brightness: Brightness.light,
-        seed: _seedLight,
-        bg: _lightBg,
-        surface: _lightSurface,
-      );
+  static ThemeData _build(AppThemeVariant variant, Brightness brightness) {
+    final spec = _specFor(variant, brightness);
 
-  static ThemeData get dark => _build(
-        brightness: Brightness.dark,
-        seed: _seedDark,
-        bg: _darkBg,
-        surface: _darkSurface,
-      );
-
-  static ThemeData _build({
-    required Brightness brightness,
-    required Color seed,
-    required Color bg,
-    required Color surface,
-  }) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: seed,
+      seedColor: spec.seed,
       brightness: brightness,
-    ).copyWith(surface: surface);
+    ).copyWith(surface: spec.surface);
 
     final base = brightness == Brightness.light
         ? ThemeData.light(useMaterial3: true)
         : ThemeData.dark(useMaterial3: true);
 
-    final textTheme = base.textTheme.copyWith(
-      displayLarge: base.textTheme.displayLarge?.copyWith(
-        fontWeight: FontWeight.w700,
-        letterSpacing: -1.5,
-      ),
-      displayMedium: base.textTheme.displayMedium?.copyWith(
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.8,
-      ),
-      headlineMedium: base.textTheme.headlineMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
-      titleLarge: base.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
-    );
+    final textTheme = _textThemeFor(base.textTheme, variant);
+    final borderRadius = _borderRadiusFor(variant);
 
-    // useMaterial3 jest defaultem w ThemeData.light()/.dark() od 3.16 —
-    // explicit set już deprecated, więc tylko copyWith bez tej flagi.
     return base.copyWith(
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: bg,
+      scaffoldBackgroundColor: spec.background,
       textTheme: textTheme,
       cardTheme: CardThemeData(
-        color: surface,
-        elevation: 0,
+        color: spec.surface,
+        elevation: spec.cardElevation,
+        shadowColor:
+            spec.cardElevation > 0 ? colorScheme.shadow : Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(borderRadius),
         ),
         margin: EdgeInsets.zero,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: bg,
+        backgroundColor: spec.background,
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
         centerTitle: false,
@@ -98,7 +94,7 @@ class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: const Size(0, 52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(borderRadius * 0.8),
           ),
           textStyle: const TextStyle(
             fontSize: 16,
@@ -108,29 +104,132 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surface,
+        fillColor: spec.surface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(borderRadius * 0.7),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(borderRadius * 0.7),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(borderRadius * 0.7),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: surface,
+        backgroundColor: spec.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(borderRadius * 1.2),
           side: BorderSide(color: colorScheme.outlineVariant),
         ),
       ),
     );
   }
+
+  static _ThemeSpec _specFor(AppThemeVariant variant, Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    return switch (variant) {
+      AppThemeVariant.spokojny => _ThemeSpec(
+          seed: isDark ? const Color(0xFF8FA8E0) : const Color(0xFF5B7AB9),
+          background:
+              isDark ? const Color(0xFF121317) : const Color(0xFFF7F6F2),
+          surface: isDark ? const Color(0xFF1A1C22) : const Color(0xFFFCFBF8),
+          cardElevation: 0,
+        ),
+      AppThemeVariant.expressive => _ThemeSpec(
+          seed: const Color(0xFF6750A4),
+          background:
+              isDark ? const Color(0xFF1C1B1F) : const Color(0xFFFEF7FF),
+          surface: isDark ? const Color(0xFF2B2930) : const Color(0xFFF7F2FA),
+          cardElevation: 1,
+        ),
+      AppThemeVariant.szklo => _ThemeSpec(
+          seed: isDark ? const Color(0xFF8FCFEC) : const Color(0xFF5BA8D9),
+          background:
+              isDark ? const Color(0xFF0F1620) : const Color(0xFFEEF4FB),
+          surface: isDark
+              ? const Color(0xFF1A2330).withValues(alpha: 0.85)
+              : const Color(0xFFFFFFFF).withValues(alpha: 0.7),
+          cardElevation: 2,
+        ),
+      AppThemeVariant.zachod => _ThemeSpec(
+          seed: isDark ? const Color(0xFFFFAB8E) : const Color(0xFFE07A4F),
+          background:
+              isDark ? const Color(0xFF1E1612) : const Color(0xFFFDF4ED),
+          surface: isDark ? const Color(0xFF2A1F18) : const Color(0xFFFFF8F1),
+          cardElevation: 0,
+        ),
+      AppThemeVariant.mono => _ThemeSpec(
+          seed: const Color(0xFF65D946),
+          background:
+              isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF),
+          surface: isDark ? const Color(0xFF111111) : const Color(0xFFF2F2F2),
+          cardElevation: 0,
+        ),
+    };
+  }
+
+  static double _borderRadiusFor(AppThemeVariant variant) {
+    return switch (variant) {
+      AppThemeVariant.spokojny => 20,
+      AppThemeVariant.expressive => 24,
+      AppThemeVariant.szklo => 28,
+      AppThemeVariant.zachod => 22,
+      AppThemeVariant.mono => 4,
+    };
+  }
+
+  static TextTheme _textThemeFor(TextTheme base, AppThemeVariant variant) {
+    final common = base.copyWith(
+      displayLarge: base.displayLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        letterSpacing: -1.5,
+      ),
+      displayMedium: base.displayMedium?.copyWith(
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.8,
+      ),
+      headlineMedium: base.headlineMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+      titleLarge: base.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+    );
+
+    if (variant == AppThemeVariant.mono) {
+      return common.copyWith(
+        displayLarge: common.displayLarge?.copyWith(
+          fontWeight: FontWeight.w900,
+          letterSpacing: -2.5,
+        ),
+        displayMedium: common.displayMedium?.copyWith(
+          fontWeight: FontWeight.w900,
+          letterSpacing: -1.5,
+        ),
+        headlineMedium: common.headlineMedium?.copyWith(
+          fontWeight: FontWeight.w800,
+        ),
+        titleLarge: common.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+      );
+    }
+
+    return common;
+  }
+}
+
+class _ThemeSpec {
+  const _ThemeSpec({
+    required this.seed,
+    required this.background,
+    required this.surface,
+    required this.cardElevation,
+  });
+
+  final Color seed;
+  final Color background;
+  final Color surface;
+  final double cardElevation;
 }
 
 /// Paleta 12 odcieni dla kategorii (spójna z seedem migracji SQL).
@@ -138,24 +237,22 @@ class CategoryPalette {
   const CategoryPalette._();
 
   static const List<Color> palette = [
-    Color(0xFF7AB87A), // zielony — Spożywcze
-    Color(0xFF5B8FB9), // niebieski — Rachunki
-    Color(0xFFE8A24A), // pomarańczowy — Transport
-    Color(0xFFB97AB8), // fiołkowy — Rozrywka
-    Color(0xFFE07A7A), // czerwony — Zdrowie
-    Color(0xFFE8C24A), // żółty — Dzieci
-    Color(0xFF8B7355), // brązowy — Mieszkanie
-    Color(0xFFB95B8F), // różowy — Ubrania
-    Color(0xFF4AE89E), // jasnozielony — Pensja (income)
-    Color(0xFF7AE0D5), // turkus — Inne dochody (income)
-    Color(0xFF5B7AB9), // granatowy — Oszczędności
-    Color(0xFF94A3B8), // slate — Inne
+    Color(0xFF7AB87A),
+    Color(0xFF5B8FB9),
+    Color(0xFFE8A24A),
+    Color(0xFFB97AB8),
+    Color(0xFFE07A7A),
+    Color(0xFFE8C24A),
+    Color(0xFF8B7355),
+    Color(0xFFB95B8F),
+    Color(0xFF4AE89E),
+    Color(0xFF7AE0D5),
+    Color(0xFF5B7AB9),
+    Color(0xFF94A3B8),
   ];
 
-  /// Kolor zastępczy gdy kategoria nie ma przypisanego koloru.
   static const Color fallback = Color(0xFF94A3B8);
 
-  /// Parser hex → Color. Format `#RRGGBB`.
   static Color fromHex(String hex) {
     final cleaned = hex.replaceFirst('#', '');
     return Color(int.parse('FF$cleaned', radix: 16));

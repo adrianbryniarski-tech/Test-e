@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/core/offline/sync_providers.dart';
@@ -60,10 +61,33 @@ class TransactionsListScreen extends ConsumerWidget {
                   builder: (_) => InvitePartnerSheet(householdId: householdId),
                 ),
               ),
-            IconButton(
-              tooltip: 'Wyloguj',
-              icon: const Icon(Icons.logout),
-              onPressed: () => ref.read(authRepositoryProvider).signOut(),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (v) async {
+                if (v == 'settings') {
+                  await context.push<void>('/settings');
+                } else if (v == 'logout') {
+                  await ref.read(authRepositoryProvider).signOut();
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'settings',
+                  child: ListTile(
+                    leading: Icon(Icons.settings_outlined),
+                    title: Text('Ustawienia'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'logout',
+                  child: ListTile(
+                    leading: Icon(Icons.logout),
+                    title: Text('Wyloguj'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
