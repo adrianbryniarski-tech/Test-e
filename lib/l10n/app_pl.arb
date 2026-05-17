@@ -1,0 +1,23 @@
+{
+  "@@locale": "pl",
+  "appTitle": "Nasz budżet domowy",
+  "@appTitle": {
+    "description": "Tytuł aplikacji"
+  },
+  "signIn": "Zaloguj się",
+  "signUp": "Załóż konto",
+  "createHousehold": "Stwórz gospodarstwo",
+  "enterInvitationCode": "Wpisz kod zaproszenia",
+  "addTransaction": "Dodaj transakcję",
+  "categories": "Kategorie",
+  "balance": "Saldo",
+  "thisMonth": "Bieżący miesiąc",
+  "lastMonth": "Poprzedni miesiąc",
+  "last3Months": "Ostatnie 3 miesiące",
+  "last6Months": "Ostatnie 6 miesięcy",
+  "last12Months": "Ostatnie 12 miesięcy",
+  "yearToDate": "Bieżący rok",
+  "lastYear": "Poprzedni rok",
+  "allTime": "Wszystko",
+  "customRange": "Własny zakres…"
+}

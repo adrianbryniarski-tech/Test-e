@@ -1,0 +1,62 @@
+name: Weekly DB backup
+
+# Cotygodniowy dump bazy Supabase do prywatnego repo backupów.
+# Free tier Supabase nie ma automatycznych backupów — robimy własne.
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # niedziela 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  dump:
+    name: pg_dump + commit to backups repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Install Supabase CLI
+        run: |
+          curl -fsSL https://supabase.com/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Dump database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p dumps
+          stamp=$(date -u +%Y-%m-%dT%H%M%SZ)
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f "dumps/dump-$stamp.sql"
+          ls -la dumps/
+
+      - name: Checkout backups repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/nasz-budzet-domowy-backups
+          token: ${{ secrets.BACKUPS_REPO_TOKEN }}
+          path: backups-repo
+        continue-on-error: true
+
+      - name: Commit dump (jeśli repo backupów istnieje)
+        if: success()
+        working-directory: backups-repo
+        run: |
+          if [ -d "../dumps" ]; then
+            mkdir -p dumps
+            cp ../dumps/*.sql dumps/
+            # Rotacja: trzymaj ostatnie 12 dumpów
+            ls -t dumps/dump-*.sql 2>/dev/null | tail -n +13 | xargs -r rm -f
+            git config user.email "actions@github.com"
+            git config user.name "GitHub Actions"
+            git add dumps/
+            git diff --cached --quiet || git commit -m "Weekly backup $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - name: Upload dump as artefact (fallback gdy brak repo backupów)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-dump-${{ github.run_id }}
+          path: dumps/*.sql
+          retention-days: 90
+          if-no-files-found: ignore

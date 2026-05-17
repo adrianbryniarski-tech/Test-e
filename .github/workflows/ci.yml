@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: Analyze + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pin do konkretnej wersji — `channel: stable` może podać różne
+      # SDK w różnych runach (cache hit / miss), co rozjeżdża analyze/lint
+      # między lokalem a CI.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.9'
+          channel: stable
+          cache: true
+
+      - name: Show versions
+        run: |
+          flutter --version
+          dart --version
+          flutter doctor -v
+
+      # Generuje brakujące pliki platformowe (android/build.gradle, MainActivity itd.)
+      # bez nadpisywania istniejących customów (AndroidManifest, pubspec).
+      - name: Generate missing platform scaffolding
+        run: |
+          flutter create --platforms=android --org=pl.naszbudzetdomowy --project-name=nasz_budzet_domowy .
+
+      - name: Install dependencies
+        id: pub_get
+        run: flutter pub get 2>&1 | tee /tmp/pub_get.log
+
+      - name: Verify formatting
+        id: fmt
+        if: always() && steps.pub_get.conclusion == 'success'
+        run: dart format --output=none --set-exit-if-changed lib test 2>&1 | tee /tmp/fmt.log
+
+      - name: Analyze
+        id: analyze
+        if: always() && steps.pub_get.conclusion == 'success'
+        run: flutter analyze --fatal-infos 2>&1 | tee /tmp/analyze.log
+
+      - name: Run tests
+        id: tests
+        if: always() && steps.pub_get.conclusion == 'success'
+        run: flutter test --coverage --reporter=expanded 2>&1 | tee /tmp/tests.log
+
+      - name: Upload coverage artefact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          if-no-files-found: ignore
+
+      - name: Upload CI logs artefact (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-logs
+          path: |
+            /tmp/pub_get.log
+            /tmp/fmt.log
+            /tmp/analyze.log
+            /tmp/tests.log
+          if-no-files-found: ignore
+
+      # Gdy CI fail w PR-cie — wkleja końcówki logów jako komentarz pod
+      # PR. Pomaga debug bez `gh auth login` lub dostępu do Actions UI.
+      - name: Post failure logs as PR comment
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const max = 12000;
+            function tail(path) {
+              try {
+                const t = fs.readFileSync(path, 'utf8');
+                return t.length > max ? '...\n' + t.slice(-max) : t;
+              } catch (e) { return '(no log captured)'; }
+            }
+            const body =
+              '## CI failure logs (`${{ github.sha }}`)\n\n' +
+              '<details><summary>pub get</summary>\n\n```\n' +
+              tail('/tmp/pub_get.log') + '\n```\n</details>\n\n' +
+              '<details><summary>format</summary>\n\n```\n' +
+              tail('/tmp/fmt.log') + '\n```\n</details>\n\n' +
+              '<details open><summary>analyze</summary>\n\n```\n' +
+              tail('/tmp/analyze.log') + '\n```\n</details>\n\n' +
+              '<details open><summary>tests</summary>\n\n```\n' +
+              tail('/tmp/tests.log') + '\n```\n</details>';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: body.substring(0, 60000),
+            });

@@ -1,0 +1,161 @@
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
+import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
+import 'package:nasz_budzet_domowy/features/dashboard/data/dashboard_summary.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/bento_tile.dart';
+
+/// Tile (b): pie chart wydatków po kategoriach.
+class CategoryPieTile extends StatefulWidget {
+  const CategoryPieTile({
+    required this.summary,
+    required this.categories,
+    super.key,
+  });
+
+  final DashboardSummary summary;
+  final List<Category> categories;
+
+  @override
+  State<CategoryPieTile> createState() => _CategoryPieTileState();
+}
+
+class _CategoryPieTileState extends State<CategoryPieTile> {
+  int? _touched;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    final data = widget.summary.expenseByCategoryId;
+    if (data.isEmpty) {
+      return BentoTile(
+        title: 'Wydatki wg kategorii',
+        child: Center(
+          child: Text(
+            'Brak wydatków w tym okresie',
+            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+
+    final catMap = {for (final c in widget.categories) c.id: c};
+    final sorted = data.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final total = sorted.fold<int>(0, (s, e) => s + e.value);
+
+    final sections = sorted.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final e = entry.value;
+      final cat = catMap[e.key];
+      final color = cat != null
+          ? CategoryPalette.fromHex(cat.colorHex)
+          : CategoryPalette.fallback;
+      final isTouched = _touched == idx;
+      final pct = total > 0 ? e.value / total * 100 : 0.0;
+      return PieChartSectionData(
+        value: e.value.toDouble(),
+        color: color,
+        radius: isTouched ? 56 : 48,
+        title: pct >= 8 ? '${pct.toStringAsFixed(0)}%' : '',
+        titleStyle: tt.labelSmall?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 10,
+        ),
+      );
+    }).toList();
+
+    final legend = sorted.take(5).toList();
+
+    return BentoTile(
+      title: 'Wydatki wg kategorii',
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: PieChart(
+              PieChartData(
+                sections: sections,
+                centerSpaceRadius: 32,
+                sectionsSpace: 2,
+                pieTouchData: PieTouchData(
+                  touchCallback: (event, response) {
+                    setState(() {
+                      if (!event.isInterestedForInteractions ||
+                          response == null ||
+                          response.touchedSection == null) {
+                        _touched = null;
+                        return;
+                      }
+                      _touched = response
+                          .touchedSection!.touchedSectionIndex;
+                    });
+                  },
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 4,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: legend.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final e = entry.value;
+                final cat = catMap[e.key];
+                final color = cat != null
+                    ? CategoryPalette.fromHex(cat.colorHex)
+                    : CategoryPalette.fallback;
+                final pct = total > 0 ? e.value / total * 100 : 0.0;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: GestureDetector(
+                    onTap: () => setState(() {
+                      _touched = _touched == idx ? null : idx;
+                    }),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            cat?.name ?? 'Nieznana',
+                            style:
+                                Theme.of(context).textTheme.labelSmall,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          '${pct.toStringAsFixed(0)}%',
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelSmall
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
