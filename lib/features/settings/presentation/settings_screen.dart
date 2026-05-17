@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/animations/application/animation_settings.dart';
+import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
+import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -81,6 +84,24 @@ class SettingsScreen extends ConsumerWidget {
             onSelectionChanged: (s) =>
                 ref.read(themeModeProvider.notifier).set(s.first),
           ),
+          const SizedBox(height: 32),
+          Text(
+            'Gospodarstwo',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Wszyscy członkowie tego gospodarstwa widzą te same transakcje. '
+            'Jeśli Twojej żony/męża nie ma na liście — to znaczy że nie '
+            'dołączyła/dołączył do tego samego gospodarstwa.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const _HouseholdInfoCard(),
           const SizedBox(height: 32),
           Text(
             'Animacje',
@@ -246,6 +267,202 @@ class _Dot extends StatelessWidget {
       width: 14,
       height: 14,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+class _HouseholdInfoCard extends ConsumerWidget {
+  const _HouseholdInfoCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final householdAsync = ref.watch(currentHouseholdIdProvider);
+    final currentUser = ref.watch(currentUserProvider);
+
+    return householdAsync.when(
+      loading: () => const Card(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (e, _) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'Błąd: $e',
+            style: TextStyle(color: theme.colorScheme.error),
+          ),
+        ),
+      ),
+      data: (householdId) {
+        if (householdId == null) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Nie należysz do żadnego gospodarstwa.'),
+            ),
+          );
+        }
+        final infoAsync = ref.watch(householdInfoProvider(householdId));
+        final membersAsync = ref.watch(householdMembersProvider(householdId));
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _kvRow(
+                  context,
+                  label: 'Nazwa',
+                  value: infoAsync.value?.name ?? '—',
+                ),
+                const SizedBox(height: 8),
+                _kvRow(
+                  context,
+                  label: 'ID gospodarstwa',
+                  value: householdId,
+                  copyable: true,
+                ),
+                const SizedBox(height: 8),
+                _kvRow(
+                  context,
+                  label: 'Twój user ID',
+                  value: currentUser?.id ?? '—',
+                  copyable: true,
+                ),
+                const SizedBox(height: 8),
+                _kvRow(
+                  context,
+                  label: 'Twój email',
+                  value: currentUser?.email ?? '—',
+                ),
+                const Divider(height: 32),
+                Text(
+                  'Członkowie',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                membersAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: LinearProgressIndicator(),
+                  ),
+                  error: (e, _) => Text(
+                    'Nie udało się pobrać listy: $e',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                  data: (members) {
+                    if (members.isEmpty) {
+                      return const Text('Brak członków (?)');
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final m in members)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  m.isOwner
+                                      ? Icons.star
+                                      : Icons.person_outline,
+                                  size: 18,
+                                  color: m.isOwner
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    m.userId,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  m.isOwner ? 'owner' : 'member',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color:
+                                        theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            members.length == 1
+                                ? 'Tylko Ty jesteś w tym gospodarstwie. '
+                                    'Żona musi się dołączyć przez kod '
+                                    'zaproszenia (zakładka Transakcje → 👤+).'
+                                : 'W gospodarstwie ${members.length} '
+                                    'członków — transakcje są wspólne.',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _kvRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+    bool copyable = false,
+  }) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Expanded(
+          child: SelectableText(
+            value,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontFamily: copyable ? 'monospace' : null,
+            ),
+          ),
+        ),
+        if (copyable)
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            iconSize: 16,
+            padding: EdgeInsets.zero,
+            tooltip: 'Kopiuj',
+            icon: const Icon(Icons.copy),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: value));
+            },
+          ),
+      ],
     );
   }
 }

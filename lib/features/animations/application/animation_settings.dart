@@ -1,5 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nasz_budzet_domowy/features/animations/data/sound_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// Singleton SoundService — reuse 1 AudioPlayer dla całej apki.
+final soundServiceProvider = Provider<SoundService>((ref) {
+  final svc = SoundService();
+  ref.onDispose(svc.dispose);
+  return svc;
+});
 
 /// Pojedyncza animacja-eyecandy. Każdą można niezależnie wyłączyć w
 /// Ustawieniach (gdy komuś się nie podoba albo telefon słabo radzi).
@@ -47,6 +55,12 @@ enum AppAnimation {
         'Pozostałe kategorie (Dzieci, Rozrywka, Mieszkanie itd.): '
         'tematyczne emoji wybuchają ze środka ekranu z rotacją '
         'i pulsem skali.',
+  ),
+  chaChingOnIncome(
+    label: 'Cash register "cha-ching!" przy dochodzie',
+    description:
+        'Krótki dźwięk dzwonka kasy fiskalnej (~0.5s) gdy zapiszesz '
+        'dochód. Razem z deszczem monet to brzmi jak ABBA bez ABBY.',
   );
 
   const AppAnimation({required this.label, required this.description});

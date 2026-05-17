@@ -92,6 +92,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       if (settings.isOn(AppAnimation.moneyRainOnIncome)) {
         MoneyRain.show(context);
       }
+      if (settings.isOn(AppAnimation.chaChingOnIncome)) {
+        // unawaited — dźwięk leci równolegle do animacji, nie czekamy.
+        ref.read(soundServiceProvider).playChaChing();
+      }
       return;
     }
 
