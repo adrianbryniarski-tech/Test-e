@@ -1,0 +1,56 @@
+name: Build debug APK
+
+# APK testowy — bez własnego keystore'a (Flutter używa wbudowanego
+# debug signing). Wystarczy do zainstalowania na telefonie i testów
+# end-to-end zanim wygenerujesz keystore dla release.
+#
+# Trigger: tylko workflow_dispatch (manualnie z GitHub UI),
+# żeby nie palić minut CI na każdym push.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate missing platform scaffolding
+        run: |
+          flutter create --platforms=android \
+            --org=pl.naszbudzetdomowy \
+            --project-name=nasz_budzet_domowy .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build debug APK
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "❌ Brak sekretów SUPABASE_URL / SUPABASE_ANON_KEY"
+            echo "Dodaj je w Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          flutter build apk --debug \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+            --dart-define=APP_VERSION=debug-${{ github.sha }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nasz-budzet-domowy-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
