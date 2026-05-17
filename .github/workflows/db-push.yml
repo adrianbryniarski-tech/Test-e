@@ -1,0 +1,50 @@
+name: Apply DB migrations
+
+# Aplikuje migracje z supabase/migrations/ do Supabase.
+# Trigger ręczny (workflow_dispatch) lub automatyczny po merge do main
+# z modyfikacją plików migracji.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**.sql'
+
+jobs:
+  push:
+    name: supabase db push
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        run: |
+          curl -fsSL https://supabase.com/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Show CLI version
+        run: supabase --version
+
+      - name: Push migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "❌ Brak sekretu SUPABASE_DB_URL w GitHub Secrets"
+            exit 1
+          fi
+          echo "✅ Sekret jest, aplikuję migracje..."
+          supabase db push --db-url "$SUPABASE_DB_URL" --include-all 2>&1
+
+      - name: Verify schema
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          # Sprawdź czy kluczowe tabele powstały.
+          supabase db dump --db-url "$SUPABASE_DB_URL" \
+            --schema public \
+            -f /tmp/schema.sql 2>&1 || true
+          echo "--- Tabele utworzone ---"
+          grep -E "^CREATE TABLE" /tmp/schema.sql | head -20 || echo "Brak tabel - sprawdź logi powyżej"
