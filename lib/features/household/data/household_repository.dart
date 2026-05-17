@@ -81,6 +81,34 @@ class HouseholdRepository {
     return rows.map(Invitation.fromJson).toList();
   }
 
+  /// Lista członków gospodarstwa — `user_id`, `role`, `joined_at`. RLS
+  /// pozwala czytać `household_members` tylko członkom (przez
+  /// `is_household_member`). Bez nazw / emaili (RLS na `auth.users`
+  /// blokowałby join'a).
+  Future<List<HouseholdMember>> members(String householdId) async {
+    final rows = await supabase
+        .from('household_members')
+        .select('user_id, role, joined_at')
+        .eq('household_id', householdId)
+        .order('joined_at');
+    return rows.map(HouseholdMember.fromJson).toList();
+  }
+
+  /// Zwraca metadata gospodarstwa (nazwa) bez całej listy członków.
+  Future<HouseholdInfo?> info(String householdId) async {
+    try {
+      final row = await supabase
+          .from('households')
+          .select('id, name')
+          .eq('id', householdId)
+          .maybeSingle();
+      if (row == null) return null;
+      return HouseholdInfo.fromJson(row);
+    } on Object {
+      return null;
+    }
+  }
+
   /// Format kodu: `XXX-XXX` (6 znaków A-Z bez I/O/0/1 dla czytelności).
   static String _generateCode() {
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -121,6 +149,42 @@ class InvitationException implements Exception {
 
   @override
   String toString() => 'InvitationException(${error.name})';
+}
+
+class HouseholdInfo {
+  const HouseholdInfo({required this.id, required this.name});
+
+  factory HouseholdInfo.fromJson(Map<String, dynamic> json) {
+    return HouseholdInfo(
+      id: json['id'] as String,
+      name: json['name'] as String,
+    );
+  }
+
+  final String id;
+  final String name;
+}
+
+class HouseholdMember {
+  const HouseholdMember({
+    required this.userId,
+    required this.role,
+    required this.joinedAt,
+  });
+
+  factory HouseholdMember.fromJson(Map<String, dynamic> json) {
+    return HouseholdMember(
+      userId: json['user_id'] as String,
+      role: json['role'] as String,
+      joinedAt: DateTime.parse(json['joined_at'] as String),
+    );
+  }
+
+  final String userId;
+  final String role;
+  final DateTime joinedAt;
+
+  bool get isOwner => role == 'owner';
 }
 
 class Invitation {

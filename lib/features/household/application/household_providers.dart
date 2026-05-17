@@ -20,3 +20,17 @@ final activeInvitationsProvider =
     FutureProvider.family<List<Invitation>, String>((ref, householdId) async {
   return ref.watch(householdRepositoryProvider).activeInvitations(householdId);
 });
+
+/// Metadata gospodarstwa (id, name) — pobierane raz.
+final householdInfoProvider =
+    FutureProvider.family<HouseholdInfo?, String>((ref, householdId) async {
+  return ref.watch(householdRepositoryProvider).info(householdId);
+});
+
+/// Lista członków gospodarstwa (user_id, role, joined_at). Każdy member
+/// widzi listę pozostałych — RLS w `household_members` to pozwala.
+final householdMembersProvider =
+    FutureProvider.family<List<HouseholdMember>, String>(
+        (ref, householdId) async {
+  return ref.watch(householdRepositoryProvider).members(householdId);
+});

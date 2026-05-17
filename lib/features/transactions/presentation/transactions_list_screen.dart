@@ -18,14 +18,44 @@ import 'package:nasz_budzet_domowy/shared/widgets/sync_status_indicator.dart';
 /// Lista transakcji bieżącego gospodarstwa.
 /// Renderuje się jako CustomScrollView (bez własnego Scaffold) —
 /// żyje w HomeShell, który dostarcza NavigationBar i FAB.
-class TransactionsListScreen extends ConsumerWidget {
+///
+/// Trzyma `_locallyDeleted` set — po swipe-delete optimistycznie ukrywamy
+/// item zanim Realtime przyniesie DELETE event. Bez tego Dismissible
+/// rzuca "A dismissed Dismissible widget is still part of the tree"
+/// bo widget wraca po build (provider jeszcze nie wie o delete).
+class TransactionsListScreen extends ConsumerStatefulWidget {
   const TransactionsListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TransactionsListScreen> createState() =>
+      _TransactionsListScreenState();
+}
+
+class _TransactionsListScreenState
+    extends ConsumerState<TransactionsListScreen> {
+  /// ID transakcji ukrytych lokalnie po swipe (zanim Realtime przyniesie
+  /// DELETE i provider się odświeży). Wyczyszczone gdy stream zaktualizuje
+  /// listę bez tego ID — wtedy nie trzeba już ukrywać.
+  final Set<String> _locallyDeleted = {};
+
+  void _onDeleteLocally(String transactionId) {
+    setState(() => _locallyDeleted.add(transactionId));
+  }
+
+  void _onDeleteFailed(String transactionId) {
+    setState(() => _locallyDeleted.remove(transactionId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final transactions = ref.watch(transactionsProvider);
     final categories = ref.watch(categoriesProvider);
     final householdId = ref.watch(currentHouseholdIdProvider).value;
+
+    // Sprzątanie: gdy provider już wie o usunięciu, nie trzymamy ID w secie.
+    final visibleIds =
+        (transactions.value ?? const <Transaction>[]).map((t) => t.id).toSet();
+    _locallyDeleted.removeWhere((id) => !visibleIds.contains(id));
 
     return CustomScrollView(
       slivers: [
@@ -117,15 +147,21 @@ class TransactionsListScreen extends ConsumerWidget {
             ),
           ),
           data: (txs) {
-            if (txs.isEmpty) {
+            // Filtruj lokalnie usunięte przed renderowaniem — Dismissible
+            // wymaga że po onDismissed widget natychmiast zniknie z drzewa.
+            final visibleTxs =
+                txs.where((t) => !_locallyDeleted.contains(t.id)).toList();
+            if (visibleTxs.isEmpty) {
               return const SliverFillRemaining(child: _EmptyState());
             }
             final categoriesMap = {
               for (final c in categories.value ?? const <Category>[]) c.id: c,
             };
             return _TransactionsList(
-              transactions: txs,
+              transactions: visibleTxs,
               categoriesById: categoriesMap,
+              onDeleteLocally: _onDeleteLocally,
+              onDeleteFailed: _onDeleteFailed,
             );
           },
         ),
@@ -175,10 +211,14 @@ class _TransactionsList extends StatelessWidget {
   const _TransactionsList({
     required this.transactions,
     required this.categoriesById,
+    required this.onDeleteLocally,
+    required this.onDeleteFailed,
   });
 
   final List<Transaction> transactions;
   final Map<String, Category> categoriesById;
+  final void Function(String id) onDeleteLocally;
+  final void Function(String id) onDeleteFailed;
 
   @override
   Widget build(BuildContext context) {
@@ -193,6 +233,8 @@ class _TransactionsList extends StatelessWidget {
               date: entry.key,
               transactions: entry.value,
               categoriesById: categoriesById,
+              onDeleteLocally: onDeleteLocally,
+              onDeleteFailed: onDeleteFailed,
             );
           },
           childCount: groups.length,
@@ -222,11 +264,15 @@ class _DateGroup extends StatelessWidget {
     required this.date,
     required this.transactions,
     required this.categoriesById,
+    required this.onDeleteLocally,
+    required this.onDeleteFailed,
   });
 
   final DateTime date;
   final List<Transaction> transactions;
   final Map<String, Category> categoriesById;
+  final void Function(String id) onDeleteLocally;
+  final void Function(String id) onDeleteFailed;
 
   @override
   Widget build(BuildContext context) {
@@ -254,6 +300,8 @@ class _DateGroup extends StatelessWidget {
                     transaction: t,
                     category: categoriesById[t.categoryId],
                     isLast: t == transactions.last,
+                    onDeleteLocally: onDeleteLocally,
+                    onDeleteFailed: onDeleteFailed,
                   ),
               ],
             ),
@@ -276,16 +324,26 @@ class _DateGroup extends StatelessWidget {
 /// Wrapper z Dismissible — swipe w lewo → confirmation dialog → delete.
 /// Działa zarówno na pending (z DAO) jak i zsynchronizowanych transakcjach
 /// (przez TransactionRepository).
+///
+/// CRITICAL: po `onDismissed` widget MUSI natychmiast zniknąć z drzewa
+/// (parent musi przefiltrować go z listy w tym samym build). Inaczej Flutter
+/// rzuca "A dismissed Dismissible widget is still part of the tree".
+/// Rozwiązujemy to przez `onDeleteLocally` — synchronicznie dodaje ID do
+/// `_locallyDeleted` set w parent state'cie, build re-render bez tego item.
 class _DismissibleTransactionRow extends ConsumerWidget {
   const _DismissibleTransactionRow({
     required this.transaction,
     required this.category,
     required this.isLast,
+    required this.onDeleteLocally,
+    required this.onDeleteFailed,
   });
 
   final Transaction transaction;
   final Category? category;
   final bool isLast;
+  final void Function(String id) onDeleteLocally;
+  final void Function(String id) onDeleteFailed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -295,10 +353,15 @@ class _DismissibleTransactionRow extends ConsumerWidget {
       direction: DismissDirection.endToStart,
       confirmDismiss: (_) => _confirm(context),
       onDismissed: (_) async {
+        // KROK 1 (SYNC, natychmiast): ukrywamy item w parent — Dismissible
+        // może teraz bez problemu zniknąć z drzewa.
+        onDeleteLocally(transaction.id);
         final messenger = ScaffoldMessenger.of(context);
+        // KROK 2 (ASYNC): faktyczny delete w DB / kolejce. Po sukcesie
+        // Realtime przyniesie DELETE event i provider odświeży listę
+        // bez tego item — _locallyDeleted self-cleanup w build().
         try {
           if (transaction.isPending) {
-            // id pending'a == clientOpId — usuwamy z lokalnej kolejki.
             await ref.read(pendingOpsDaoProvider).remove(transaction.id);
           } else {
             await ref
@@ -309,6 +372,8 @@ class _DismissibleTransactionRow extends ConsumerWidget {
             const SnackBar(content: Text('Transakcja usunięta')),
           );
         } on Object catch (e) {
+          // Rollback: usuń z _locallyDeleted żeby item wrócił.
+          onDeleteFailed(transaction.id);
           messenger.showSnackBar(
             SnackBar(content: Text('Nie udało się usunąć: $e')),
           );
