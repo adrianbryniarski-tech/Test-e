@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-
-import '../../app/theme.dart';
-import '../../features/categories/data/category.dart';
-import 'material_symbol_icon.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
+import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/material_symbol_icon.dart';
 
 /// Małe kółko z kolorem + ikoną kategorii. Używane w liście transakcji,
 /// chipach filtrów, pickerach, wynikach voice.

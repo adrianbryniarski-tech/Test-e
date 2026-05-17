@@ -27,8 +27,7 @@ void main() {
       expect(find.text('Kod ma 6 znaków (ABC-XYZ).'), findsOneWidget);
     });
 
-    testWidgets('walidator: 6 znaków bez myślnika → akceptuje',
-        (tester) async {
+    testWidgets('walidator: 6 znaków bez myślnika → akceptuje', (tester) async {
       await tester.pumpWidget(wrap(const JoinHouseholdScreen()));
       await tester.enterText(find.byType(TextFormField), 'ABCXYZ');
       final formState = tester.state<FormState>(find.byType(Form));
@@ -36,8 +35,7 @@ void main() {
       expect(formState.validate(), isTrue);
     });
 
-    testWidgets('walidator: 6 znaków z myślnikiem → akceptuje',
-        (tester) async {
+    testWidgets('walidator: 6 znaków z myślnikiem → akceptuje', (tester) async {
       await tester.pumpWidget(wrap(const JoinHouseholdScreen()));
       await tester.enterText(find.byType(TextFormField), 'ABC-XYZ');
       final formState = tester.state<FormState>(find.byType(Form));

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 
@@ -23,12 +24,12 @@ void main() {
 
     test('fromHex parses #RRGGBB correctly', () {
       final green = CategoryPalette.fromHex('#7AB87A');
-      expect(green.value.toRadixString(16).toUpperCase(), 'FF7AB87A');
+      expect(green.toARGB32().toRadixString(16).toUpperCase(), 'FF7AB87A');
     });
 
     test('fromHex handles missing #', () {
       final green = CategoryPalette.fromHex('7AB87A');
-      expect(green.value.toRadixString(16).toUpperCase(), 'FF7AB87A');
+      expect(green.toARGB32().toRadixString(16).toUpperCase(), 'FF7AB87A');
     });
   });
 }

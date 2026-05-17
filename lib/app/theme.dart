@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 /// Material 3 + paleta low-stimulus dla fintech 2026.
 ///
 /// Zasady:
-/// - Tło off-white / very-dark-grey (nie czyste białe/czarne — mniej zmęczenia oczu).
-/// - Akcent zielony (income, success) i czerwony stonowany (expense, danger) z palety
-///   kategorii — spójne z `category_colors.dart` (12 odcieni).
+/// - Tło off-white / very-dark-grey (nie czyste białe/czarne — mniej
+///   zmęczenia oczu).
+/// - Akcent zielony (income, success) i czerwony stonowany (expense,
+///   danger) z palety kategorii — spójne z [CategoryPalette] (12 odcieni).
 /// - Big typography (Display L dla salda, Headline M dla nagłówków kart).
 /// - Font Inter (system) — czytelny, neutralny.
 class AppTheme {
@@ -71,8 +72,9 @@ class AppTheme {
       ),
     );
 
+    // useMaterial3 jest defaultem w ThemeData.light()/.dark() od 3.16 —
+    // explicit set już deprecated, więc tylko copyWith bez tej flagi.
     return base.copyWith(
-      useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: bg,
       textTheme: textTheme,

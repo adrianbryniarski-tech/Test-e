@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../shared/widgets/inline_error.dart';
-import '../../../shared/widgets/loading_filled_button.dart';
-import '../application/auth_providers.dart';
+import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
 
 /// Krok 2 logowania: user wpisuje 6-cyfrowy kod z maila.
 ///
@@ -80,7 +79,8 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   String _humanizeError(Object e) {
     final raw = e.toString().toLowerCase();
     if (raw.contains('invalid') || raw.contains('expired')) {
-      return 'Kod nieprawidłowy lub wygasł. Spróbuj ponownie albo poproś o nowy.';
+      return 'Kod nieprawidłowy lub wygasł. '
+          'Spróbuj ponownie albo poproś o nowy.';
     }
     if (raw.contains('rate limit') || raw.contains('429')) {
       return 'Wysłano za dużo prób. Spróbuj za chwilę.';

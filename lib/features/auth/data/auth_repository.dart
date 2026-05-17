@@ -1,6 +1,5 @@
+import 'package:nasz_budzet_domowy/core/supabase/supabase_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../../../core/supabase/supabase_client.dart';
 
 /// Cienka warstwa nad `supabase.auth`.
 ///

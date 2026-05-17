@@ -1,8 +1,7 @@
+import 'package:nasz_budzet_domowy/core/supabase/supabase_client.dart';
+import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-
-import '../../../core/supabase/supabase_client.dart';
-import 'transaction.dart';
 
 /// Wynik próby zapisu transakcji.
 sealed class TransactionWriteResult {
@@ -38,7 +37,7 @@ class TransactionRepository {
         .from('transactions')
         .stream(primaryKey: ['id'])
         .eq('household_id', householdId)
-        .order('occurred_at', ascending: false)
+        .order('occurred_at')
         .map((rows) => rows.map(Transaction.fromJson).toList());
   }
 

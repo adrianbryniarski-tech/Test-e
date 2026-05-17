@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nasz_budzet_domowy/features/auth/data/auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../data/auth_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return const AuthRepository();

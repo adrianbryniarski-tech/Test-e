@@ -1,8 +1,7 @@
 import 'dart:math';
 
+import 'package:nasz_budzet_domowy/core/supabase/supabase_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../../../core/supabase/supabase_client.dart';
 
 /// Operacje na gospodarstwie i zaproszeniach.
 ///
@@ -32,24 +31,25 @@ class HouseholdRepository {
   ///
   /// Atomowe (RPC w jednej transakcji DB). Zwraca `household_id`.
   Future<String> createHousehold({required String name}) async {
-    final result = await supabase.rpc(
+    final result = await supabase.rpc<String>(
       'create_household_with_owner',
       params: {'p_name': name},
     );
-    return result as String;
+    return result;
   }
 
-  /// Przyjmuje zaproszenie po kodzie. Mapowanie błędów SQL → typed
-  /// `InvitationError` żeby UI mógł pokazać przyjazny komunikat.
+  /// Przyjmuje zaproszenie po kodzie. Mapowanie błędów SQL →
+  /// `InvitationException` z typed `InvitationError` żeby UI mógł
+  /// pokazać przyjazny komunikat.
   Future<String> acceptInvitation(String code) async {
     try {
-      final result = await supabase.rpc(
+      final result = await supabase.rpc<String>(
         'accept_invitation',
         params: {'p_code': code.trim().toUpperCase()},
       );
-      return result as String;
+      return result;
     } on PostgrestException catch (e) {
-      throw _mapInvitationError(e);
+      throw InvitationException(_mapInvitationError(e));
     }
   }
 
@@ -76,7 +76,7 @@ class HouseholdRepository {
         .eq('household_id', householdId)
         .isFilter('accepted_at', null)
         .gt('expires_at', DateTime.now().toUtc().toIso8601String())
-        .order('created_at', ascending: false)
+        .order('created_at')
         .limit(5);
     return rows.map(Invitation.fromJson).toList();
   }
@@ -110,6 +110,17 @@ enum InvitationError {
   expired,
   unauthenticated,
   unknown,
+}
+
+/// Wyjątek z typed `InvitationError`. Łapać w UI:
+/// `on InvitationException catch (e) { /* e.error */ }`.
+class InvitationException implements Exception {
+  const InvitationException(this.error);
+
+  final InvitationError error;
+
+  @override
+  String toString() => 'InvitationException(${error.name})';
 }
 
 class Invitation {

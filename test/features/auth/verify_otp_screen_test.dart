@@ -16,12 +16,12 @@ void main() {
         wrap(const VerifyOtpScreen(email: 'adrian@example.com')),
       );
       expect(find.text('Wpisz 6-cyfrowy kod'), findsOneWidget);
-      expect(find.text('adrian@example.com'), findsOneWidget);
+      // Email jest w Text.rich z TextSpan — szukamy częściowego dopasowania.
+      expect(find.textContaining('adrian@example.com'), findsOneWidget);
       expect(find.text('Zaloguj się'), findsOneWidget);
     });
 
-    testWidgets('walidator: kod krótszy niż 6 znaków → błąd',
-        (tester) async {
+    testWidgets('walidator: kod krótszy niż 6 znaków → błąd', (tester) async {
       await tester.pumpWidget(
         wrap(const VerifyOtpScreen(email: 'adrian@example.com')),
       );

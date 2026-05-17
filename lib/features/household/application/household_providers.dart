@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../auth/application/auth_providers.dart';
-import '../data/household_repository.dart';
+import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
+import 'package:nasz_budzet_domowy/features/household/data/household_repository.dart';
 
 final householdRepositoryProvider = Provider<HouseholdRepository>((ref) {
   return const HouseholdRepository();
@@ -19,7 +18,5 @@ final currentHouseholdIdProvider = FutureProvider<String?>((ref) async {
 /// Aktywne (nieprzyjęte, niewygasłe) zaproszenia dla gospodarstwa.
 final activeInvitationsProvider =
     FutureProvider.family<List<Invitation>, String>((ref, householdId) async {
-  return ref
-      .watch(householdRepositoryProvider)
-      .activeInvitations(householdId);
+  return ref.watch(householdRepositoryProvider).activeInvitations(householdId);
 });

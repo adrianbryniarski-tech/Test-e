@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:nasz_budzet_domowy/app/router.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
+import 'package:nasz_budzet_domowy/core/env.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'app/router.dart';
-import 'app/theme.dart';
-import 'core/env.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +36,6 @@ class NaszBudzetDomowyApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
       routerConfig: router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

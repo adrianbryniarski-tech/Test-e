@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../shared/widgets/inline_error.dart';
-import '../../../shared/widgets/loading_filled_button.dart';
-import '../application/household_providers.dart';
-import '../data/household_repository.dart';
+import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
+import 'package:nasz_budzet_domowy/features/household/data/household_repository.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
 
 /// Wpisanie kodu zaproszenia (np. ABC-XYZ).
 ///
@@ -32,8 +31,7 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
   }
 
   String _normalize(String raw) {
-    final cleaned =
-        raw.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    final cleaned = raw.toUpperCase().replaceAll(RegExp('[^A-Z0-9]'), '');
     if (cleaned.length != 6) return cleaned;
     return '${cleaned.substring(0, 3)}-${cleaned.substring(3)}';
   }
@@ -51,12 +49,14 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
       await ref.read(householdRepositoryProvider).acceptInvitation(code);
       // Router auto-redirect na /home po invalidacji.
       ref.invalidate(currentHouseholdIdProvider);
-    } on InvitationError catch (err) {
+    } on InvitationException catch (err) {
       if (!mounted) return;
-      setState(() => _errorMessage = _messageFor(err));
+      setState(() => _errorMessage = _messageFor(err.error));
     } on Object {
       if (!mounted) return;
-      setState(() => _errorMessage = 'Nie udało się dołączyć. Spróbuj ponownie.');
+      setState(
+        () => _errorMessage = 'Nie udało się dołączyć. Spróbuj ponownie.',
+      );
     } finally {
       if (mounted) setState(() => _isJoining = false);
     }
@@ -66,14 +66,11 @@ class _JoinHouseholdScreenState extends ConsumerState<JoinHouseholdScreen> {
     return switch (err) {
       InvitationError.notFound =>
         'Kod nieprawidłowy. Sprawdź czy nie pomyliłeś znaków (O ≠ 0, I ≠ 1).',
-      InvitationError.alreadyUsed =>
-        'Ten kod był już użyty. Poproś o nowy.',
+      InvitationError.alreadyUsed => 'Ten kod był już użyty. Poproś o nowy.',
       InvitationError.expired =>
         'Kod wygasł. Poproś osobę z gospodarstwa o nowy kod.',
-      InvitationError.unauthenticated =>
-        'Sesja wygasła. Zaloguj się ponownie.',
-      InvitationError.unknown =>
-        'Nie udało się dołączyć. Spróbuj ponownie.',
+      InvitationError.unauthenticated => 'Sesja wygasła. Zaloguj się ponownie.',
+      InvitationError.unknown => 'Nie udało się dołączyć. Spróbuj ponownie.',
     };
   }
 

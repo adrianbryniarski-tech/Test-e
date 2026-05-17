@@ -3,16 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-
-import '../../../shared/widgets/category_avatar.dart';
-import '../../../shared/widgets/inline_error.dart';
-import '../../../shared/widgets/loading_filled_button.dart';
-import '../../categories/application/category_providers.dart';
-import '../../categories/data/category.dart';
-import '../../household/application/household_providers.dart';
-import '../application/transaction_providers.dart';
-import '../data/transaction.dart';
-import '../data/transaction_repository.dart';
+import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
+import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
+import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
+import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
+import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
+import 'package:nasz_budzet_domowy/features/transactions/data/transaction_repository.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
 
 /// Form ręcznego dodawania transakcji.
 ///
@@ -76,9 +75,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       return;
     }
 
-    final householdId = ref.read(currentHouseholdIdProvider).valueOrNull;
+    final householdId = ref.read(currentHouseholdIdProvider).value;
     if (householdId == null) {
-      setState(() => _errorMessage = 'Brak gospodarstwa. Zaloguj się ponownie.');
+      setState(
+        () => _errorMessage = 'Brak gospodarstwa. Zaloguj się ponownie.',
+      );
       return;
     }
 
@@ -116,8 +117,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       case TransactionWriteSuccess():
         context.pop();
       case TransactionDuplicate():
-        setState(() => _errorMessage =
-            'Ta sama transakcja jest już zapisana w bazie.');
+        setState(
+          () => _errorMessage = 'Ta sama transakcja jest już zapisana w bazie.',
+        );
       case TransactionWriteFailure(:final message):
         setState(() => _errorMessage = message);
     }
@@ -146,7 +148,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 value: _type,
                 onChanged: (v) => setState(() {
                   _type = v;
-                  // Reset wybranej kategorii jeśli nie pasuje już do nowego typu.
+                  // Reset wyboru kategorii jeśli nie pasuje do nowego typu.
                   if (_category != null && _category!.type != v) {
                     _category = null;
                   }
@@ -160,7 +162,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 ),
                 textInputAction: TextInputAction.next,
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                  FilteringTextInputFormatter.allow(RegExp('[0-9.,]')),
                 ],
                 style: theme.textTheme.headlineMedium,
                 decoration: const InputDecoration(

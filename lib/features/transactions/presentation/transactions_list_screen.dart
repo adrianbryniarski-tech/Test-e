@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-
-import '../../../app/theme.dart';
-import '../../../shared/widgets/category_avatar.dart';
-import '../../auth/application/auth_providers.dart';
-import '../../categories/application/category_providers.dart';
-import '../../categories/data/category.dart';
-import '../application/transaction_providers.dart';
-import '../data/transaction.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
+import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
+import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
+import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
+import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
+import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
 
 /// Główny ekran apki — lista transakcji bieżącego gospodarstwa,
 /// FAB do dodania, signOut w AppBar.
@@ -54,8 +53,7 @@ class TransactionsListScreen extends ConsumerWidget {
         data: (txs) {
           if (txs.isEmpty) return const _EmptyState();
           final categoriesMap = {
-            for (final c in categories.valueOrNull ?? const <Category>[])
-              c.id: c,
+            for (final c in categories.value ?? const <Category>[]) c.id: c,
           };
           return _TransactionsList(
             transactions: txs,
@@ -142,8 +140,7 @@ class _TransactionsList extends StatelessWidget {
       );
       map.putIfAbsent(key, () => []).add(t);
     }
-    return map.entries.toList()
-      ..sort((a, b) => b.key.compareTo(a.key));
+    return map.entries.toList()..sort((a, b) => b.key.compareTo(a.key));
   }
 }
 
@@ -236,8 +233,7 @@ class _TransactionRow extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color:
-                        theme.colorScheme.surfaceContainerHighest,
+                    color: theme.colorScheme.surfaceContainerHighest,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -247,7 +243,7 @@ class _TransactionRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      transaction.description?.isNotEmpty == true
+                      (transaction.description?.isNotEmpty ?? false)
                           ? transaction.description!
                           : (category?.name ?? 'Transakcja'),
                       style: theme.textTheme.bodyLarge?.copyWith(

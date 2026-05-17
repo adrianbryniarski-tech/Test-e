@@ -13,10 +13,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # State management — Riverpod 3.0 z offline persistence
+  # State management — Riverpod 3.0
   flutter_riverpod: ^3.0.0
-  riverpod_annotation: ^3.0.0
-  riverpod_sqflite: ^0.1.4
 
   # Routing
   go_router: ^14.6.2
@@ -25,14 +23,10 @@ dependencies:
   supabase_flutter: ^2.8.0
 
   # Voice input — offline ASR przez Vosk
-  vosk_flutter_2: ^0.3.49
+  vosk_flutter_2: ^1.0.5
 
   # Charts
   fl_chart: ^0.69.0
-
-  # Models / serialization
-  freezed_annotation: ^2.4.4
-  json_annotation: ^4.9.0
 
   # Forms
   reactive_forms: ^17.0.1
@@ -47,7 +41,7 @@ dependencies:
   http: ^1.2.2
 
   # i18n / daty
-  intl: ^0.19.0
+  intl: ^0.20.0
   timeago: ^3.7.0
 
   # Krypto (dedup hash)
@@ -74,13 +68,9 @@ dev_dependencies:
   # Lint
   very_good_analysis: ^7.0.0
 
-  # Code generation
-  build_runner: ^2.4.13
-  freezed: ^2.5.7
-  json_serializable: ^6.9.0
-  riverpod_generator: ^3.0.0
-  custom_lint: ^0.7.0
-  riverpod_lint: ^3.0.0
+  # Code generation — dorzucimy gdy wprowadzimy @freezed / @riverpod
+  # (tickety 5+). W v1 piszemy modele ręcznie żeby nie wciągać konfliktów
+  # wersji analyzer'a z `freezed` / `riverpod_generator` / `custom_lint`.
 
 flutter:
   uses-material-design: true

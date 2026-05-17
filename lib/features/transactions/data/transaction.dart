@@ -100,18 +100,19 @@ class Transaction {
 /// Hashowanie do twardej deduplikacji.
 ///
 /// Wzór z `docs/plan.md`:
-/// ```
-/// dedup_hash = sha256( occurred_at_iso || amount_cents || normalize(description) )
-/// normalize = lower + strip polish diacritics + collapse ws + remove punctuation
+/// ```text
+/// dedup_hash = sha256( date_iso || amount_cents || normalize(description) )
+/// normalize  = lower + strip polish diacritics + collapse whitespace
+///              + remove punctuation
 /// ```
 ///
 /// Wynik **MUSI** być deterministyczny — ten sam hash dla tej samej
-/// transakcji z dowolnego urządzenia (klucz UNIQUE(household_id, dedup_hash)
-/// w DB to wymusza).
+/// transakcji z dowolnego urządzenia (klucz
+/// `UNIQUE(household_id, dedup_hash)` w DB to wymusza).
 class TransactionHasher {
   const TransactionHasher._();
 
-  /// Zwraca SHA-256 hex (64 znaki) gotowy do zapisu w `transactions.dedup_hash`.
+  /// Zwraca SHA-256 hex (64 znaki). Wynik → `transactions.dedup_hash`.
   static String compute({
     required DateTime occurredAt,
     required int amountCents,

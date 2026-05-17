@@ -1,7 +1,7 @@
 /// Konfiguracja przekazywana przez `--dart-define` przy buildzie.
 ///
 /// Przykład:
-/// ```
+/// ```bash
 /// flutter run \
 ///   --dart-define=SUPABASE_URL=https://xxx.supabase.co \
 ///   --dart-define=SUPABASE_ANON_KEY=eyJ...

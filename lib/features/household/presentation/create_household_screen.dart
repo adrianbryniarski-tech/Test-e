@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../shared/widgets/inline_error.dart';
-import '../../../shared/widgets/loading_filled_button.dart';
-import '../application/household_providers.dart';
+import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
 
 class CreateHouseholdScreen extends ConsumerStatefulWidget {
   const CreateHouseholdScreen({super.key});
@@ -14,8 +13,7 @@ class CreateHouseholdScreen extends ConsumerStatefulWidget {
       _CreateHouseholdScreenState();
 }
 
-class _CreateHouseholdScreenState
-    extends ConsumerState<CreateHouseholdScreen> {
+class _CreateHouseholdScreenState extends ConsumerState<CreateHouseholdScreen> {
   final _controller = TextEditingController(text: 'Nasz dom');
   final _formKey = GlobalKey<FormState>();
   bool _isCreating = false;

@@ -1,4 +1,4 @@
-import '../../transactions/data/transaction.dart';
+import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 
 /// Kategoria z `categories`. Może być systemowa (seed, `is_system=true`,
 /// `name` zablokowane do edycji) lub własna (CRUD w Ticket 7).

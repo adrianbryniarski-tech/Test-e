@@ -8,8 +8,8 @@ analyzer:
     - "lib/l10n/generated/**"
   errors:
     invalid_annotation_target: ignore
-  plugins:
-    - custom_lint
+  # `custom_lint` plugin wyłączony — wraca razem z riverpod_generator
+  # w jednym z kolejnych ticketów.
 
 linter:
   rules:

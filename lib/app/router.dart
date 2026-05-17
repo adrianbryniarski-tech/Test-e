@@ -4,17 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nasz_budzet_domowy/features/auth/presentation/sign_in_screen.dart';
+import 'package:nasz_budzet_domowy/features/auth/presentation/verify_otp_screen.dart';
+import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
+import 'package:nasz_budzet_domowy/features/household/presentation/create_household_screen.dart';
+import 'package:nasz_budzet_domowy/features/household/presentation/invitation_share_screen.dart';
+import 'package:nasz_budzet_domowy/features/household/presentation/join_household_screen.dart';
+import 'package:nasz_budzet_domowy/features/household/presentation/onboarding_choice_screen.dart';
+import 'package:nasz_budzet_domowy/features/transactions/presentation/add_transaction_screen.dart';
+import 'package:nasz_budzet_domowy/features/transactions/presentation/transactions_list_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../features/auth/presentation/sign_in_screen.dart';
-import '../features/auth/presentation/verify_otp_screen.dart';
-import '../features/household/application/household_providers.dart';
-import '../features/household/presentation/create_household_screen.dart';
-import '../features/household/presentation/invitation_share_screen.dart';
-import '../features/household/presentation/join_household_screen.dart';
-import '../features/household/presentation/onboarding_choice_screen.dart';
-import '../features/transactions/presentation/add_transaction_screen.dart';
-import '../features/transactions/presentation/transactions_list_screen.dart';
 
 /// Globalny router z redirectami zależnymi od stanu auth i gospodarstwa.
 ///
@@ -40,8 +39,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loggedIn = session != null;
       final location = state.matchedLocation;
 
-      final isOnAuth = location == '/sign-in' ||
-          location.startsWith('/sign-in/');
+      final isOnAuth =
+          location == '/sign-in' || location.startsWith('/sign-in/');
       final isLoading = location == '/loading';
 
       if (!loggedIn) {
@@ -59,7 +58,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isLoading ? null : '/loading';
       }
 
-      final household = householdAsync.valueOrNull;
+      final household = householdAsync.value;
       if (isLoading || isOnAuth) {
         return household == null ? '/onboarding' : '/home';
       }
@@ -141,7 +140,6 @@ class _AuthHouseholdRefresh extends ChangeNotifier {
     _householdSub = _ref.listen<AsyncValue<String?>>(
       currentHouseholdIdProvider,
       (_, __) => notifyListeners(),
-      fireImmediately: false,
     );
   }
 

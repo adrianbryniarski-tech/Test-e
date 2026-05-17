@@ -1,11 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../shared/widgets/inline_error.dart';
-import '../../../shared/widgets/loading_filled_button.dart';
-import '../application/auth_providers.dart';
+import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
 
 /// Pierwszy ekran auth: prosi o email, wysyła kod OTP, przechodzi do
 /// `VerifyOtpScreen`.
@@ -45,7 +46,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     try {
       await ref.read(authRepositoryProvider).sendEmailOtp(email);
       if (!mounted) return;
-      context.push('/sign-in/verify', extra: email);
+      // `push` zwraca Future<T?> z value pop-a — nie potrzebujemy.
+      unawaited(context.push('/sign-in/verify', extra: email));
     } on Object catch (e) {
       if (!mounted) return;
       setState(() => _errorMessage = _humanizeError(e));

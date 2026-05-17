@@ -21,8 +21,7 @@ void main() {
     testWidgets('walidator: pusty email → komunikat błędu', (tester) async {
       await tester.pumpWidget(wrap(const SignInScreen()));
       // Symulujemy submit pustego formularza przez Form.validate().
-      final formState =
-          tester.state<FormState>(find.byType(Form));
+      final formState = tester.state<FormState>(find.byType(Form));
       expect(formState.validate(), isFalse);
       await tester.pumpAndSettle();
       expect(find.text('Wpisz email.'), findsOneWidget);
@@ -40,7 +39,9 @@ void main() {
     testWidgets('walidator: poprawny email → brak błędu', (tester) async {
       await tester.pumpWidget(wrap(const SignInScreen()));
       await tester.enterText(
-          find.byType(TextFormField), 'adrian@example.com');
+        find.byType(TextFormField),
+        'adrian@example.com',
+      );
       final formState = tester.state<FormState>(find.byType(Form));
       expect(formState.validate(), isTrue);
     });

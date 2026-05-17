@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../auth/application/auth_providers.dart';
+import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 
 /// Pierwszy ekran po logowaniu (gdy user nie należy do żadnego gospodarstwa).
 ///
@@ -46,7 +45,8 @@ class OnboardingChoiceScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Budżet jest wspólny dla dwóch osób. Wybierz jak chcesz zacząć:',
+                'Budżet jest wspólny dla dwóch osób. '
+                'Wybierz jak chcesz zacząć:',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -64,8 +64,7 @@ class OnboardingChoiceScreen extends ConsumerWidget {
               _ChoiceCard(
                 icon: Icons.key_outlined,
                 title: 'Mam kod zaproszenia',
-                subtitle:
-                    'Partner/ka wysłał Ci kod (np. ABC-XYZ) — wpisz go, '
+                subtitle: 'Partner/ka wysłał Ci kod (np. ABC-XYZ) — wpisz go, '
                     'żeby się dołączyć.',
                 onTap: () => context.push('/onboarding/join'),
               ),
