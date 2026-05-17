@@ -23,7 +23,11 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate missing platform scaffolding
+      # Pliki gradle-wrapper.jar / gradlew / local.properties są .gitignored
+      # (każdy clone Flutter dogenerowuje je sam). To wystarczy żeby reszta
+      # zatwierdzona w repo (build.gradle.kts, MainActivity.kt, styles, mipmapy,
+      # AndroidManifest.xml) miała kompletny scaffolding do buildu.
+      - name: Bootstrap gradle wrapper + local.properties
         run: |
           flutter create --platforms=android \
             --org=pl.naszbudzetdomowy \
