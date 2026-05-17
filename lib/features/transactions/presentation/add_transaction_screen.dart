@@ -42,6 +42,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   bool _isSaving = false;
   String? _errorMessage;
 
+  /// Czy aktualny formularz został zainicjowany głosem. Resetowane na false
+  /// gdy user ręcznie edytuje kwotę — od tego momentu transakcja idzie
+  /// jako `manual`, bo voice tylko zasugerował.
+  bool _fromVoice = false;
+
   /// Wypełnia formularz wynikiem parsowania głosu.
   void _applyVoiceResult(VoiceParseResult result) {
     setState(() {
@@ -56,6 +61,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
         _descriptionController.text = result.description!;
       }
       _type = result.type;
+      _fromVoice = true;
     });
   }
 
@@ -120,7 +126,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       amountCents: amountCents,
       type: _type,
       categoryId: _category!.id,
-      source: TransactionSource.manual,
+      source:
+          _fromVoice ? TransactionSource.voice : TransactionSource.manual,
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),

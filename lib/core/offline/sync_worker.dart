@@ -20,12 +20,26 @@ enum SyncWorkerState { idle, syncing }
 /// Reentrancy: drugi `_drain()` w trakcie pierwszego wraca natychmiast
 /// (flag `_running`). Po pierwszym drain, jeśli w tym czasie ktoś wołał
 /// `syncNow()`, robi się drugi run (flag `_pendingRun`).
+/// Postgres error codes po których nie ma sensu retry'ować — zmiana danych
+/// w DB nie naprawi błędu deterministycznego (np. FK violation = kategoria
+/// nie istnieje, RLS = brak uprawnień). Po takim błędzie inkrementujemy
+/// retry_count + idziemy do następnej op. Po `maxRetries` op trafia do
+/// dead-letter w DAO i jest pomijana.
+const _permanentPgErrorCodes = <String>{
+  '23502', // not_null_violation
+  '23503', // foreign_key_violation (np. category_id usunięty)
+  '23514', // check_violation
+  '42501', // insufficient_privilege (RLS odrzuciło)
+  '22P02', // invalid_text_representation
+};
+
 class SyncWorker extends ChangeNotifier {
   SyncWorker(this._dao);
 
   final PendingOpsDao _dao;
 
   StreamSubscription<List<ConnectivityResult>>? _connSub;
+  StreamSubscription<AuthState>? _authSub;
   bool _started = false;
 
   bool _running = false;
@@ -40,20 +54,25 @@ class SyncWorker extends ChangeNotifier {
   String? _lastError;
   String? get lastError => _lastError;
 
-  /// Startuje listener i robi pierwszy drain (jeśli mamy pendingi).
+  /// Startuje listenery i robi pierwszy drain (jeśli mamy pendingi).
+  ///
+  /// Dwa trigery:
+  /// 1. `Connectivity.onConnectivityChanged` — gdy wraca sieć po offline.
+  /// 2. `Supabase.auth.onAuthStateChange` — `signedIn` triggeruje drain,
+  ///    bo `_drain` wymaga `auth.uid()` i bez tej subskrypcji op-y
+  ///    wpisane przed loginem nie poszłyby do bazy aż do kolejnej zmiany
+  ///    connectivity.
   Future<void> start() async {
     if (_started) return;
     _started = true;
 
     _connSub = Connectivity().onConnectivityChanged.listen((results) {
-      // 6.x emituje List<ConnectivityResult>. "Online" gdy COKOLWIEK
-      // innego niż `none` siedzi w liście — wifi+cellular może być jedno
-      // lub drugie, oba znaczą "mogę próbować".
       final online = results.any((r) => r != ConnectivityResult.none);
-      if (online) {
-        // unawaited — listener nie czeka.
-        _scheduleDrain();
-      }
+      if (online) _scheduleDrain();
+    });
+
+    _authSub = supabase.auth.onAuthStateChange.listen((state) {
+      if (state.event == AuthChangeEvent.signedIn) _scheduleDrain();
     });
 
     await _scheduleDrain();
@@ -79,9 +98,12 @@ class SyncWorker extends ChangeNotifier {
   }
 
   Future<void> _drain() async {
-    if (supabase.auth.currentUser == null) return;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
 
-    final pendings = await _dao.listAll();
+    // Filtruje po `created_by = currentUser.id` (nie spamuje cudzymi op-ami,
+    // które i tak by padły na RLS) i pomija dead-lettery (retry_count ≥ max).
+    final pendings = await _dao.listForUser(user.id);
     if (pendings.isEmpty) return;
 
     _state = SyncWorkerState.syncing;
@@ -102,15 +124,21 @@ class SyncWorker extends ChangeNotifier {
           continue;
         }
         hadError = true;
-        await _dao.markFailure(op.clientOpId, e.message);
-        // RLS / kategoria nie istnieje / inne błędy "nieuleczalne sieciowo"
-        // - przerywamy drain żeby nie spamować Supabase. User zobaczy
-        // ⚠️ i może zdecydować co dalej.
+        await _dao.markFailure(op.clientOpId, '${e.code ?? "?"} ${e.message}');
+        if (_permanentPgErrorCodes.contains(e.code)) {
+          // Deterministyczny błąd (FK / RLS / NOT NULL itp.) — retry da
+          // ten sam wynik. Idziemy do NASTĘPNEJ op, nie blokujemy
+          // kolejki. Po `PendingOpsDao.maxRetries` ta op wpadnie w
+          // dead-letter i przestanie się pojawiać w listForUser.
+          continue;
+        }
+        // Inny błąd (np. 5xx, network reject) — przerywamy żeby nie
+        // spamować Supabase. Kolejny drain spróbuje od początku.
         break;
       } on Object catch (e) {
         hadError = true;
         await _dao.markFailure(op.clientOpId, e.toString());
-        // Sieciowy błąd — przerywamy. Następny event connectivity
+        // Sieciowy / timeout — przerywamy. Następny event connectivity
         // odpali kolejny drain.
         break;
       }
@@ -133,6 +161,7 @@ class SyncWorker extends ChangeNotifier {
   @override
   void dispose() {
     _connSub?.cancel();
+    _authSub?.cancel();
     super.dispose();
   }
 }
