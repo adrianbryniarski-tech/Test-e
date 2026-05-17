@@ -53,6 +53,22 @@ enum AppThemeVariant {
 
   final String label;
   final String description;
+
+  /// Czy motyw używa "premium" efektów neon: gradient tła, glow buttons,
+  /// animated borders. Tylko dla 3 neon-tematów.
+  bool get hasNeonEffects =>
+      this == AppThemeVariant.cyber ||
+      this == AppThemeVariant.synthwave ||
+      this == AppThemeVariant.galaktyka;
+
+  /// Drugi kolor dla gradientu tła (poza primary z ColorScheme).
+  /// Używany w `NeonGradientBackground` do subtle gradient'u.
+  Color get gradientAccent => switch (this) {
+        AppThemeVariant.cyber => const Color(0xFF00D9C0),
+        AppThemeVariant.synthwave => const Color(0xFF6CC7FF),
+        AppThemeVariant.galaktyka => const Color(0xFFFF6CD9),
+        _ => const Color(0xFF000000),
+      };
 }
 
 /// Builder ThemeData dla wszystkich wariantów. Wybiera między 5 stylami
