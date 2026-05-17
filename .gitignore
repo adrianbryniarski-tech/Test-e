@@ -47,6 +47,10 @@ app.*.map.json
 **/android/key.properties
 *.jks
 *.keystore
+# Wyjątek: debug.keystore JEST commitowany (publiczne defaulty, potrzebne
+# do spójnej sygnatury debug APK między CI buildami — bez tego każdy
+# build ma inną sygnaturę i Android odrzuca update istniejącej apki).
+!android/app/debug.keystore
 
 # iOS / macOS
 **/ios/**/*.mode1v3
