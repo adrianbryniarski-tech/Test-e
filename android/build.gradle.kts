@@ -15,14 +15,15 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
-subprojects {
-    project.evaluationDependsOn(":app")
-}
 
 // AGP 8+ wymaga `namespace` w każdym Android module. Starsze pluginy
 // (m.in. vosk_flutter_2 1.0.5 — ostatnio wydany 2 lata temu, nie będzie
 // fix'a) tego nie deklarują. Patchujemy w runtime: jak plugin Android
 // library nie ma namespace, ustawiamy go na "com.<nazwa_pluginu>".
+//
+// MUSI być PRZED `subprojects { evaluationDependsOn(":app") }` poniżej
+// — tamto forsuje eager ewaluację subprojektów, a wtedy `afterEvaluate`
+// rzuca "Cannot run afterEvaluate when project already evaluated".
 subprojects {
     afterEvaluate {
         if (project.hasProperty("android")) {
@@ -34,6 +35,10 @@ subprojects {
             }
         }
     }
+}
+
+subprojects {
+    project.evaluationDependsOn(":app")
 }
 
 tasks.register<Delete>("clean") {
