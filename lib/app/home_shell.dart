@@ -4,6 +4,8 @@ import 'package:nasz_budzet_domowy/features/budgets/presentation/budgets_screen.
 import 'package:nasz_budzet_domowy/features/categories/presentation/categories_screen.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:nasz_budzet_domowy/features/transactions/presentation/transactions_list_screen.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/glowing_button.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/neon_gradient_background.dart';
 
 /// Główny shell apki z dolną nawigacją M3.
 /// Cztery zakładki: Dashboard, Transakcje, Budżety, Kategorie.
@@ -28,9 +30,11 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: _screens,
+      body: NeonGradientBackground(
+        child: IndexedStack(
+          index: _index,
+          children: _screens,
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
@@ -59,7 +63,7 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GlowingFAB(
         onPressed: () => context.push('/transactions/add'),
         tooltip: 'Dodaj transakcję',
         child: const Icon(Icons.add),

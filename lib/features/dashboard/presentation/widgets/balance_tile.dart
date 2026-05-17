@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/data/dashboard_summary.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/animated_neon_border.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/bento_tile.dart';
 
 /// Tile (a): saldo okresu + delta vs poprzedni równy okres.
@@ -24,9 +25,10 @@ class BalanceTile extends StatelessWidget {
     final positive = balance >= 0;
     final deltaPositive = delta >= 0;
 
-    return BentoTile(
-      title: 'Saldo okresu',
-      child: Column(
+    return AnimatedNeonBorder(
+      child: BentoTile(
+        title: 'Saldo okresu',
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -82,6 +84,7 @@ class BalanceTile extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }
