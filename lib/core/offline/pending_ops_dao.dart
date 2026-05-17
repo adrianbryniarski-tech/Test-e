@@ -16,6 +16,13 @@ class PendingOpsDao {
   final LocalDb _db;
   final StreamController<void> _changes = StreamController<void>.broadcast();
 
+  /// Po tylu nieudanych próbach operacja jest traktowana jako "dead-letter"
+  /// — nie próbujemy jej już synchronizować, ale zostaje w bazie do
+  /// inspekcji / manualnej akcji usera. Bez tego limitu jedna trwale zła
+  /// operacja (np. transakcja z usuniętą kategorią) blokowałaby kolejkę
+  /// w nieskończoność.
+  static const maxRetries = 5;
+
   /// Wstawia nowy pending — kolizja `client_op_id` (już zakolejkowany)
   /// jest ignorowana (idempotency: ten sam op zapisany dwa razy).
   Future<void> enqueue(PendingTransaction op) async {
@@ -43,6 +50,23 @@ class PendingOpsDao {
       'pending_transactions',
       where: 'household_id = ?',
       whereArgs: [householdId],
+      orderBy: 'enqueued_at ASC',
+    );
+    return rows.map(PendingTransaction.fromMap).toList();
+  }
+
+  /// Pendingi danego usera, pomijając dead-lettery (po `maxRetries` próbach).
+  /// Worker NIE PRÓBUJE ich już wysyłać — czekają tylko w bazie.
+  ///
+  /// Filtr po `created_by` zapobiega scenariuszowi: user A wpisał transakcję
+  /// offline → wylogował się → user B zalogował na tym samym telefonie →
+  /// worker próbuje wepchnąć op user-a A jako user B → RLS odrzuca wiecznie.
+  Future<List<PendingTransaction>> listForUser(String userId) async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'pending_transactions',
+      where: 'created_by = ? AND retry_count < ?',
+      whereArgs: [userId, maxRetries],
       orderBy: 'enqueued_at ASC',
     );
     return rows.map(PendingTransaction.fromMap).toList();

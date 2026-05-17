@@ -27,10 +27,12 @@ void main() {
     String clientOpId = 'op-1',
     String householdId = 'h-1',
     int amountCents = 1500,
+    String? createdBy,
   }) {
     return PendingTransaction(
       clientOpId: clientOpId,
       householdId: householdId,
+      createdBy: createdBy,
       occurredAt: DateTime(2026, 5, 17),
       amountCents: amountCents,
       type: TransactionType.expense,
@@ -88,6 +90,32 @@ void main() {
     await dao.markFailure('a', 'boom');
     expect(await dao.countAll(), 2);
     expect(await dao.countWithErrors(), 1);
+  });
+
+  test('listForUser filtruje po created_by — nie miesza userów', () async {
+    await dao.enqueue(makeOp(clientOpId: 'a', createdBy: 'user-A'));
+    await dao.enqueue(makeOp(clientOpId: 'b', createdBy: 'user-B'));
+    final forA = await dao.listForUser('user-A');
+    final forB = await dao.listForUser('user-B');
+    expect(forA, hasLength(1));
+    expect(forA.first.clientOpId, 'a');
+    expect(forB, hasLength(1));
+    expect(forB.first.clientOpId, 'b');
+  });
+
+  test('listForUser pomija dead-lettery (retry_count >= maxRetries)',
+      () async {
+    await dao.enqueue(makeOp(clientOpId: 'fresh', createdBy: 'u1'));
+    await dao.enqueue(makeOp(clientOpId: 'dead', createdBy: 'u1'));
+    // Symulujemy maxRetries nieudanych prób dla 'dead'.
+    for (var i = 0; i < PendingOpsDao.maxRetries; i++) {
+      await dao.markFailure('dead', 'transient');
+    }
+    final list = await dao.listForUser('u1');
+    expect(list, hasLength(1));
+    expect(list.first.clientOpId, 'fresh');
+    // Dead-letter ZOSTAŁ w bazie (do inspekcji), ale nie idzie do retry.
+    expect(await dao.countAll(), 2);
   });
 
   test('watchForHousehold emituje przy każdej zmianie', () async {
