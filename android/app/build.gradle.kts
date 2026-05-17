@@ -24,7 +24,10 @@ android {
 
     defaultConfig {
         applicationId = "pl.naszbudzetdomowy.nasz_budzet_domowy"
-        minSdk = flutter.minSdkVersion
+        // vosk_flutter_2 wymaga minSdk 30 (Android 11+). Dla apki na 2
+        // telefony to OK — oba mają Android ≥11. NIE używamy
+        // flutter.minSdkVersion (które jest niższe).
+        minSdk = 30
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
