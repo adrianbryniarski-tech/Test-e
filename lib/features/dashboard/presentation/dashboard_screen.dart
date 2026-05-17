@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
@@ -7,6 +8,7 @@ import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/categ
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/date_range_bar.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/income_expense_bar_tile.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/running_balance_tile.dart';
+import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 
 /// Ekran główny — bento grid z podsumowaniem finansów.
@@ -20,18 +22,43 @@ class DashboardScreen extends ConsumerWidget {
 
     return CustomScrollView(
       slivers: [
-        const SliverAppBar(
-          title: Text('Nasz budżet domowy'),
+        SliverAppBar(
+          title: const Text('Nasz budżet domowy'),
           centerTitle: false,
           floating: true,
           snap: true,
-          bottom: PreferredSize(
+          actions: [
+            IconButton(
+              tooltip: 'Odśwież',
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref
+                  ..invalidate(transactionsProvider)
+                  ..invalidate(categoriesProvider);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Odświeżam dane…'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+            ),
+          ],
+          bottom: const PreferredSize(
             preferredSize: Size.fromHeight(56),
             child: Padding(
               padding: EdgeInsets.only(bottom: 8),
               child: DateRangeBar(),
             ),
           ),
+        ),
+        CupertinoSliverRefreshControl(
+          onRefresh: () async {
+            ref
+              ..invalidate(transactionsProvider)
+              ..invalidate(categoriesProvider);
+            await Future<void>.delayed(const Duration(milliseconds: 500));
+          },
         ),
         summaryAsync.when(
           loading: () => const SliverFillRemaining(

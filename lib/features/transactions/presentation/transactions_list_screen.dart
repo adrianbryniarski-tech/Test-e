@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -34,6 +35,21 @@ class TransactionsListScreen extends ConsumerWidget {
           snap: true,
           actions: [
             const SyncStatusIndicator(),
+            IconButton(
+              tooltip: 'Odśwież',
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref
+                  ..invalidate(transactionsProvider)
+                  ..invalidate(categoriesProvider);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Odświeżam dane…'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+            ),
             if (householdId != null)
               IconButton(
                 tooltip: 'Zaproś partnera',
@@ -50,6 +66,16 @@ class TransactionsListScreen extends ConsumerWidget {
               onPressed: () => ref.read(authRepositoryProvider).signOut(),
             ),
           ],
+        ),
+        // Pull-to-refresh — jak realtime padnie (np. zerwane wifi przy
+        // wybudzeniu), user pociąga listę palcem od góry → fresh fetch.
+        CupertinoSliverRefreshControl(
+          onRefresh: () async {
+            ref
+              ..invalidate(transactionsProvider)
+              ..invalidate(categoriesProvider);
+            await Future<void>.delayed(const Duration(milliseconds: 500));
+          },
         ),
         transactions.when(
           loading: () => const SliverFillRemaining(

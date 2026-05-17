@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -34,11 +35,30 @@ class BudgetsScreen extends ConsumerWidget {
           snap: true,
           actions: [
             IconButton(
+              tooltip: 'Odśwież',
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref.invalidate(budgetsProvider);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Odświeżam dane…'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+            ),
+            IconButton(
               tooltip: 'Nowy budżet',
               icon: const Icon(Icons.add),
               onPressed: () => _openCreateSheet(context),
             ),
           ],
+        ),
+        CupertinoSliverRefreshControl(
+          onRefresh: () async {
+            ref.invalidate(budgetsProvider);
+            await Future<void>.delayed(const Duration(milliseconds: 500));
+          },
         ),
         budgetsAsync.when(
           loading: () => const SliverFillRemaining(
