@@ -412,6 +412,17 @@ class _HouseholdInfoCard extends ConsumerWidget {
                             style: theme.textTheme.bodySmall,
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        OutlinedButton.icon(
+                          onPressed: () =>
+                              _confirmLeave(context, ref, householdId),
+                          icon: const Icon(Icons.logout),
+                          label: const Text('Opuść gospodarstwo'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: theme.colorScheme.error,
+                            side: BorderSide(color: theme.colorScheme.error),
+                          ),
+                        ),
                       ],
                     );
                   },
@@ -422,6 +433,62 @@ class _HouseholdInfoCard extends ConsumerWidget {
         );
       },
     );
+  }
+
+  Future<void> _confirmLeave(
+    BuildContext context,
+    WidgetRef ref,
+    String householdId,
+  ) async {
+    final theme = Theme.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Opuścić gospodarstwo?'),
+        content: const Text(
+          'Stracisz dostęp do transakcji tego gospodarstwa. '
+          'Po opuszczeniu wrócisz do ekranu onboardingu — możesz tam '
+          'wpisać kod zaproszenia do innego gospodarstwa albo stworzyć '
+          'nowe.\n\n'
+          'Transakcje pozostają w gospodarstwie — pozostali członkowie '
+          'nadal je widzą. Jeśli byłeś jedynym członkiem, gospodarstwo '
+          'pozostaje niewidoczne (nikogo w nim nie ma).',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.errorContainer,
+              foregroundColor: theme.colorScheme.onErrorContainer,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Opuść'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    if (!context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await ref
+          .read(householdRepositoryProvider)
+          .leaveHousehold(householdId);
+      ref.invalidate(currentHouseholdIdProvider);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Opuszczono gospodarstwo.')),
+      );
+      if (navigator.canPop()) navigator.pop();
+    } on Object catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Nie udało się opuścić: $e')),
+      );
+    }
   }
 
   Widget _kvRow(
