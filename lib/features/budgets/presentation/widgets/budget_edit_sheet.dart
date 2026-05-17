@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nasz_budzet_domowy/features/animations/application/animation_settings.dart';
+import 'package:nasz_budzet_domowy/features/animations/presentation/sparkle_burst.dart';
 import 'package:nasz_budzet_domowy/features/budgets/application/budget_providers.dart';
 import 'package:nasz_budzet_domowy/features/budgets/data/budget.dart';
 import 'package:nasz_budzet_domowy/features/budgets/data/budget_repository.dart';
@@ -92,6 +94,12 @@ class _BudgetEditSheetState extends ConsumerState<BudgetEditSheet> {
     if (!mounted) return;
     switch (result) {
       case BudgetWriteSuccess():
+        if (!_isEdit &&
+            ref
+                .read(animationSettingsProvider)
+                .isOn(AppAnimation.budgetSparkleOnCreate)) {
+          SparkleBurst.show(context);
+        }
         Navigator.of(context).pop(true);
       case BudgetDuplicate():
         setState(() {

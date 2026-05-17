@@ -3,6 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:nasz_budzet_domowy/features/animations/application/animation_settings.dart';
+import 'package:nasz_budzet_domowy/features/animations/presentation/emoji_burst.dart';
+import 'package:nasz_budzet_domowy/features/animations/presentation/expense_flash.dart';
+import 'package:nasz_budzet_domowy/features/animations/presentation/money_rain.dart';
+import 'package:nasz_budzet_domowy/features/animations/presentation/trex_food_feast.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
@@ -73,6 +78,41 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     super.dispose();
   }
 
+  /// Wybiera animację zgodnie z typem transakcji i kategorią + per-user
+  /// togglami w ustawieniach. Wywołane PRZED `context.pop()` — apka jeszcze
+  /// jest na ekranie, więc Overlay rysuje się nad listą po powrocie.
+  void _playSuccessAnimation() {
+    final settings = ref.read(animationSettingsProvider);
+    final cat = _category;
+
+    if (_type == TransactionType.income) {
+      if (settings.isOn(AppAnimation.moneyRainOnIncome)) {
+        MoneyRain.show(context);
+      }
+      return;
+    }
+
+    // Wydatek — priorytety od najbardziej specyficznych do generycznych:
+    // 1) Spożywcze → T-rex easter egg (jeśli włączony)
+    // 2) Pasujący zestaw emoji dla kategorii (transport, zdrowie, dzieci…)
+    // 3) Czerwony flash jako fallback (jeśli włączony)
+    if (cat != null &&
+        cat.name.toLowerCase().contains('spożywcze') &&
+        settings.isOn(AppAnimation.trexFoodFeast)) {
+      TrexFoodFeast.show(context);
+      return;
+    }
+    final glyphs = cat == null ? null : emojisForCategory(cat.name);
+    if (glyphs != null &&
+        settings.isOn(AppAnimation.categoryEmojiRain)) {
+      EmojiBurst.show(context, glyphs: glyphs);
+      return;
+    }
+    if (settings.isOn(AppAnimation.expenseFlashOnExpense)) {
+      ExpenseFlash.show(context);
+    }
+  }
+
   /// Parsuje pole kwoty na grosze (`amount_cents`). Akceptuje `,` lub `.`
   /// jako separator dziesiętny, max 2 cyfry po przecinku.
   int? _parseAmount(String raw) {
@@ -141,6 +181,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
     switch (result) {
       case TransactionWriteSuccess():
+        _playSuccessAnimation();
         context.pop();
       case TransactionWriteQueued():
         // Brak sieci → zapisane lokalnie. UX: zamykamy formularz tak samo

@@ -8,6 +8,7 @@ import 'package:nasz_budzet_domowy/core/env.dart';
 import 'package:nasz_budzet_domowy/core/offline/sync_providers.dart';
 import 'package:nasz_budzet_domowy/features/budgets/application/budget_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
+import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -74,11 +75,14 @@ class _NaszBudzetDomowyAppState extends ConsumerState<NaszBudzetDomowyApp>
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    final variant = ref.watch(themeVariantProvider);
+    final mode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: 'Nasz budżet domowy',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      theme: AppTheme.light(variant),
+      darkTheme: AppTheme.dark(variant),
+      themeMode: mode,
       routerConfig: router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
