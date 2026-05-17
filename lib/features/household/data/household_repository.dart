@@ -38,6 +38,16 @@ class HouseholdRepository {
     return result;
   }
 
+  /// Bieżący user opuszcza wskazane gospodarstwo. Po tym
+  /// `currentHouseholdId()` zwraca null → router redirects na onboarding
+  /// → user może wpisać kod zaproszenia do innego.
+  Future<void> leaveHousehold(String householdId) async {
+    await supabase.rpc<void>(
+      'leave_household',
+      params: {'p_household_id': householdId},
+    );
+  }
+
   /// Przyjmuje zaproszenie po kodzie. Mapowanie błędów SQL →
   /// `InvitationException` z typed `InvitationError` żeby UI mógł
   /// pokazać przyjazny komunikat.

@@ -11,12 +11,13 @@ class SoundService {
 
   final AudioPlayer _player;
 
-  /// Odpala krótki cash-register "cha-ching" przy zapisie dochodu.
-  /// Plik w assets/sounds/cha_ching.wav (~20 KB, ~450 ms).
+  /// Odpala cash-register "cha-ching" przy zapisie dochodu.
+  /// Plik w assets/sounds/cha_ching.mp3 — rzeczywista próbka kasy
+  /// z freesound.org (CC0 / public domain).
   Future<void> playChaChing() async {
     try {
       await _player.stop();
-      await _player.play(AssetSource('sounds/cha_ching.wav'));
+      await _player.play(AssetSource('sounds/cha_ching.mp3'));
     } on Object {
       // Audio errors są niekrytyczne — nigdy nie powinniśmy crashnąć
       // apki bo dźwięk nie zagrał (np. brak headphone routing, no permission).
