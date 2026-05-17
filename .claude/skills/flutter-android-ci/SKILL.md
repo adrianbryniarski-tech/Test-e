@@ -40,8 +40,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     defaultConfig {
+        minSdk = 30                 // vosk_flutter_2 wymaga (NIE flutter.minSdkVersion)
         multiDexEnabled = true
-        // ... applicationId, minSdk, etc.
+        // ... applicationId, targetSdk, etc.
     }
 }
 
@@ -126,7 +127,17 @@ To załatwia drugą połowę AGP 8 migration namespace'u: oprócz patcha w build
 ## Pułapki z natywnymi pluginami
 
 ### vosk_flutter_2 (offline ASR)
-- Wymaga `minSdkVersion >= 21` — Flutter `flutter.minSdkVersion` w 2026 jest 24+, OK.
+- **Wymaga `minSdk = 30`** (Android 11+). NIE 21, NIE 24. Build pada na
+  manifest merger: `minSdkVersion 24 cannot be smaller than version 30
+  declared in library [:vosk_flutter_2]`. Hardcode w
+  `android/app/build.gradle.kts` zamiast `flutter.minSdkVersion`:
+  ```kotlin
+  defaultConfig {
+      minSdk = 30
+  }
+  ```
+  Dla apki własnej na 2 telefony Android 11+ to OK. Dla apki publicznej
+  rozważ alternatywny plugin ASR z niższym minSdk.
 - NDK: nie wymaga konkretnej wersji w `1.0.5`, ale jak będzie warning "NDK version mismatch", **dopisz ndkVersion explicite** do `android/app/build.gradle.kts`:
   ```kotlin
   android {
