@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:nasz_budzet_domowy/features/animations/application/animation_settings.dart';
+import 'package:nasz_budzet_domowy/features/animations/presentation/emoji_burst.dart';
 import 'package:nasz_budzet_domowy/features/animations/presentation/expense_flash.dart';
 import 'package:nasz_budzet_domowy/features/animations/presentation/money_rain.dart';
 import 'package:nasz_budzet_domowy/features/animations/presentation/trex_food_feast.dart';
@@ -83,18 +84,32 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   void _playSuccessAnimation() {
     final settings = ref.read(animationSettingsProvider);
     final cat = _category;
-    final isFood =
-        cat != null && cat.name.toLowerCase().contains('spożywcze');
 
-    if (_type == TransactionType.income &&
-        settings.isOn(AppAnimation.moneyRainOnIncome)) {
-      MoneyRain.show(context);
-    } else if (_type == TransactionType.expense) {
-      if (isFood && settings.isOn(AppAnimation.trexFoodFeast)) {
-        TrexFoodFeast.show(context);
-      } else if (settings.isOn(AppAnimation.expenseFlashOnExpense)) {
-        ExpenseFlash.show(context);
+    if (_type == TransactionType.income) {
+      if (settings.isOn(AppAnimation.moneyRainOnIncome)) {
+        MoneyRain.show(context);
       }
+      return;
+    }
+
+    // Wydatek — priorytety od najbardziej specyficznych do generycznych:
+    // 1) Spożywcze → T-rex easter egg (jeśli włączony)
+    // 2) Pasujący zestaw emoji dla kategorii (transport, zdrowie, dzieci…)
+    // 3) Czerwony flash jako fallback (jeśli włączony)
+    if (cat != null &&
+        cat.name.toLowerCase().contains('spożywcze') &&
+        settings.isOn(AppAnimation.trexFoodFeast)) {
+      TrexFoodFeast.show(context);
+      return;
+    }
+    final glyphs = cat == null ? null : emojisForCategory(cat.name);
+    if (glyphs != null &&
+        settings.isOn(AppAnimation.categoryEmojiRain)) {
+      EmojiBurst.show(context, glyphs: glyphs);
+      return;
+    }
+    if (settings.isOn(AppAnimation.expenseFlashOnExpense)) {
+      ExpenseFlash.show(context);
     }
   }
 

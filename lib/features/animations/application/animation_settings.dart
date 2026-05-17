@@ -23,6 +23,13 @@ enum AppAnimation {
     description:
         'Przy wydatku na Spożywcze mały T-rex przebiega przez ekran '
         'i zjada burgera. Niech wie że to jego pieniądze.',
+  ),
+  categoryEmojiRain(
+    label: 'Tematyczny deszcz emoji per kategoria',
+    description:
+        'Przy wydatku — auto, paliwo dla Transportu, leki dla Zdrowia, '
+        'misie dla Dzieci, popcorn dla Rozrywki itd. Po jednej animacji '
+        'dla każdej kategorii.',
   );
 
   const AppAnimation({required this.label, required this.description});
