@@ -152,6 +152,9 @@ class CategoryPalette {
     Color(0xFF94A3B8), // slate — Inne
   ];
 
+  /// Kolor zastępczy gdy kategoria nie ma przypisanego koloru.
+  static const Color fallback = Color(0xFF94A3B8);
+
   /// Parser hex → Color. Format `#RRGGBB`.
   static Color fromHex(String hex) {
     final cleaned = hex.replaceFirst('#', '');

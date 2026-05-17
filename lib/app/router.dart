@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nasz_budzet_domowy/app/home_shell.dart';
 import 'package:nasz_budzet_domowy/features/auth/presentation/sign_in_screen.dart';
 import 'package:nasz_budzet_domowy/features/auth/presentation/verify_otp_screen.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
@@ -12,7 +13,6 @@ import 'package:nasz_budzet_domowy/features/household/presentation/invitation_sh
 import 'package:nasz_budzet_domowy/features/household/presentation/join_household_screen.dart';
 import 'package:nasz_budzet_domowy/features/household/presentation/onboarding_choice_screen.dart';
 import 'package:nasz_budzet_domowy/features/transactions/presentation/add_transaction_screen.dart';
-import 'package:nasz_budzet_domowy/features/transactions/presentation/transactions_list_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Globalny router z redirectami zależnymi od stanu auth i gospodarstwa.
@@ -112,18 +112,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const TransactionsListScreen(),
+        builder: (context, state) => const HomeShell(),
       ),
       GoRoute(
         path: '/transactions/add',
         builder: (context, state) => const AddTransactionScreen(),
-      ),
-      GoRoute(
-        path: '/settings/categories',
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Kategorie',
-          message: 'CRUD kategorii — Ticket 7.',
-        ),
       ),
     ],
   );
@@ -162,30 +155,6 @@ class _BootLoadingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title, required this.message});
-
-  final String title;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            message,
-            style: Theme.of(context).textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
     );
   }
 }

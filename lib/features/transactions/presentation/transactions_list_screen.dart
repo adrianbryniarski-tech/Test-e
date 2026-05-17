@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
@@ -10,11 +9,9 @@ import 'package:nasz_budzet_domowy/features/transactions/application/transaction
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
 
-/// Główny ekran apki — lista transakcji bieżącego gospodarstwa,
-/// FAB do dodania, signOut w AppBar.
-///
-/// Dashboard z wykresami (Ticket 5) zastąpi tę listę jako rootową stronę
-/// i przeniesie listę pod `/transactions`.
+/// Lista transakcji bieżącego gospodarstwa.
+/// Renderuje się jako CustomScrollView (bez własnego Scaffold) —
+/// żyje w HomeShell, który dostarcza NavigationBar i FAB.
 class TransactionsListScreen extends ConsumerWidget {
   const TransactionsListScreen({super.key});
 
@@ -23,44 +20,50 @@ class TransactionsListScreen extends ConsumerWidget {
     final transactions = ref.watch(transactionsProvider);
     final categories = ref.watch(categoriesProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Nasz budżet domowy'),
-        actions: [
-          IconButton(
-            tooltip: 'Wyloguj',
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authRepositoryProvider).signOut(),
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          title: const Text('Transakcje'),
+          centerTitle: false,
+          floating: true,
+          snap: true,
+          actions: [
+            IconButton(
+              tooltip: 'Wyloguj',
+              icon: const Icon(Icons.logout),
+              onPressed: () => ref.read(authRepositoryProvider).signOut(),
+            ),
+          ],
+        ),
+        transactions.when(
+          loading: () => const SliverFillRemaining(
+            child: Center(child: CircularProgressIndicator()),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/transactions/add'),
-        icon: const Icon(Icons.add),
-        label: const Text('Dodaj'),
-      ),
-      body: transactions.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              'Nie udało się pobrać transakcji: $e',
-              textAlign: TextAlign.center,
+          error: (e, _) => SliverFillRemaining(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Nie udało się pobrać transakcji: $e',
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ),
           ),
+          data: (txs) {
+            if (txs.isEmpty) {
+              return const SliverFillRemaining(child: _EmptyState());
+            }
+            final categoriesMap = {
+              for (final c in categories.value ?? const <Category>[]) c.id: c,
+            };
+            return _TransactionsList(
+              transactions: txs,
+              categoriesById: categoriesMap,
+            );
+          },
         ),
-        data: (txs) {
-          if (txs.isEmpty) return const _EmptyState();
-          final categoriesMap = {
-            for (final c in categories.value ?? const <Category>[]) c.id: c,
-          };
-          return _TransactionsList(
-            transactions: txs,
-            categoriesById: categoriesMap,
-          );
-        },
-      ),
+      ],
     );
   }
 }
@@ -114,17 +117,21 @@ class _TransactionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final groups = _groupByDate(transactions);
-    return ListView.builder(
+    return SliverPadding(
       padding: const EdgeInsets.only(top: 8, bottom: 96),
-      itemCount: groups.length,
-      itemBuilder: (context, index) {
-        final entry = groups[index];
-        return _DateGroup(
-          date: entry.key,
-          transactions: entry.value,
-          categoriesById: categoriesById,
-        );
-      },
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final entry = groups[index];
+            return _DateGroup(
+              date: entry.key,
+              transactions: entry.value,
+              categoriesById: categoriesById,
+            );
+          },
+          childCount: groups.length,
+        ),
+      ),
     );
   }
 
