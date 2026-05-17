@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/animations/application/animation_settings.dart';
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -17,7 +19,30 @@ class SettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ustawienia')),
+      appBar: AppBar(
+        title: const Text('Ustawienia'),
+        actions: [
+          IconButton(
+            tooltip: 'Odśwież',
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              // Inwaliduje wszystkie hh-providers + transactions/categories.
+              // Bez tego po dołączeniu żony moja apka nie wiedziała.
+              ref
+                ..invalidate(currentHouseholdIdProvider)
+                ..invalidate(householdInfoProvider)
+                ..invalidate(householdMembersProvider)
+                ..invalidate(activeInvitationsProvider);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Odświeżam…'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
@@ -474,19 +499,40 @@ class _HouseholdInfoCard extends ConsumerWidget {
     if (!context.mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
+    final goRouter = GoRouter.of(context);
     try {
       await ref
           .read(householdRepositoryProvider)
           .leaveHousehold(householdId);
-      ref.invalidate(currentHouseholdIdProvider);
+      // Inwaliduje WSZYSTKIE hh providers, żeby router wykrył brak hh
+      // i nie pokazywał starych członków.
+      ref
+        ..invalidate(currentHouseholdIdProvider)
+        ..invalidate(householdInfoProvider)
+        ..invalidate(householdMembersProvider)
+        ..invalidate(activeInvitationsProvider);
       messenger.showSnackBar(
         const SnackBar(content: Text('Opuszczono gospodarstwo.')),
       );
-      if (navigator.canPop()) navigator.pop();
+      // Zamiast wracać na onboarding-choice, idziemy bezpośrednio na
+      // formularz wpisania kodu (najczęstszy scenariusz: user opuścił
+      // żeby się przenieść do innego gospodarstwa).
+      goRouter.go('/onboarding/join');
+    } on PostgrestException catch (e) {
+      // Najczęściej: function nie istnieje (42883) — migracja 0004
+      // nieaplikowana. Pokazujemy konkretny error code/message.
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Nie udało się opuścić: ${e.code ?? "?"} ${e.message}'),
+          duration: const Duration(seconds: 6),
+        ),
+      );
     } on Object catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Nie udało się opuścić: $e')),
+        SnackBar(
+          content: Text('Nie udało się opuścić: $e'),
+          duration: const Duration(seconds: 6),
+        ),
       );
     }
   }
