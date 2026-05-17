@@ -36,6 +36,25 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # AGP 8 nie akceptuje atrybutu `package="..."` w AndroidManifest.xml
+      # — namespace MUSI być w build.gradle. Stare pluginy Flutter (Vosk,
+      # niektóre starsze wersje) wciąż mają legacy `package="..."` i build
+      # pada na ich processDebugManifest. Stripujemy atrybut ze wszystkich
+      # plugin-manifestów w pub-cache. Modyfikacja pub-cache jest OK na
+      # świeżym CI runnerze (każdy run startuje od zera).
+      - name: Strip legacy package="..." z manifestów starych pluginów (AGP 8)
+        run: |
+          set -e
+          stripped=0
+          while IFS= read -r f; do
+            if grep -q ' package="' "$f"; then
+              echo "Stripping legacy package= from: $f"
+              sed -i 's/[[:space:]]\+package="[^"]*"//' "$f"
+              stripped=$((stripped + 1))
+            fi
+          done < <(find ~/.pub-cache/hosted -name AndroidManifest.xml -path "*/android/*")
+          echo "Stripped $stripped manifest(s)."
+
       - name: Build debug APK
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

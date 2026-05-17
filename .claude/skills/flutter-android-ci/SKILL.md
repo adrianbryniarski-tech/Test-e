@@ -7,7 +7,7 @@ description: Konfiguracja buildu Flutter Android w GitHub Actions dla projektu "
 
 ## ⚡ PRE-FLIGHT CHECKLIST — zrób TO ZANIM zaczniesz buildować APK
 
-Te 5 rzeczy są **prawie zawsze potrzebne** w 2026 dla projektów Flutter z natywnymi pluginami (notifications, ASR, camera, biometria). Skonfiguruj WSZYSTKIE od razu w jednym commicie — inaczej zmarnujesz 30+ min CI iterując przez padnięte buildy i sfrustrujesz użytkownika.
+Te 6 rzeczy są **prawie zawsze potrzebne** w 2026 dla projektów Flutter z natywnymi pluginami (notifications, ASR, camera, biometria). Skonfiguruj WSZYSTKIE od razu w jednym commicie — inaczej zmarnujesz 30+ min CI iterując przez padnięte buildy i sfrustrujesz użytkownika.
 
 **1. Commituj cały `android/` scaffolding** (nie polegaj na `flutter create` w CI).
 
@@ -68,10 +68,26 @@ dependencies {
 - `actions/checkout@v4`
 - `subosito/flutter-action@v2` (channel: stable, cache: true)
 - `flutter pub get`
+- **strip step (pkt 6) — między `pub get` a `build apk`**
 - `flutter build apk --debug --dart-define=...`
 - `actions/upload-artifact@v4` na `build/app/outputs/flutter-apk/app-debug.apk`
 
-**Jak zrobisz wszystkie 5 od razu, build przejdzie za pierwszym razem.** Nie próbuj ich dodawać reaktywnie po każdym padniętym buildzie — znasz tę listę z góry.
+**6. Strip `package="..."` ze starych plugin-manifestów** w workflow (między `flutter pub get` a `flutter build apk`):
+```yaml
+- name: Strip legacy package="..." z manifestów starych pluginów (AGP 8)
+  run: |
+    set -e
+    while IFS= read -r f; do
+      if grep -q ' package="' "$f"; then
+        echo "Stripping legacy package= from: $f"
+        sed -i 's/[[:space:]]\+package="[^"]*"//' "$f"
+      fi
+    done < <(find ~/.pub-cache/hosted -name AndroidManifest.xml -path "*/android/*")
+```
+
+To załatwia drugą połowę AGP 8 migration namespace'u: oprócz patcha w build.gradle (pkt 2), AGP wymaga ŻEBY w samym manifeście NIE BYŁO atrybutu `package="..."`. Stare pluginy mają go z czasów AGP 7. Strip jest na pub-cache w CI — w świeżym kontenerze runner'a każdy run zaczyna od zera, więc OK.
+
+**Jak zrobisz wszystkie 6 od razu, build przejdzie za pierwszym razem.** Nie próbuj ich dodawać reaktywnie po każdym padniętym buildzie — znasz tę listę z góry.
 
 ## TL;DR — najważniejsza zasada
 
@@ -137,6 +153,15 @@ dependencies {
   }
   ```
   To samo zadziała dla każdego innego starego plugin'a w Flutter ecosystem'ie.
+
+- **CRITICAL #2: legacy `package="..."` w AndroidManifest.xml plugin'a.**
+  Po naprawieniu namespace w build.gradle, build padał na
+  `:vosk_flutter_2:processDebugManifest`:
+  > Incorrect package="org.vosk.vosk_flutter" found in source AndroidManifest.xml.
+  > Setting the namespace via the package attribute in the source
+  > AndroidManifest.xml is no longer supported.
+
+  AGP 8 wymaga ŻEBY w manifeście pluginu NIE BYŁO `package="..."` — namespace MUSI być tylko w build.gradle. Plugin Vosk wciąż go ma (relikt AGP 7). Fix: strip step w CI workflow (patrz pkt 6 PRE-FLIGHT CHECKLIST powyżej).
 
 ### flutter_local_notifications (≥18.x)
 - **CRITICAL: wymaga `coreLibraryDesugaring`** (używa `java.time.*`). Bez tego build pada na `:app:checkDebugAarMetadata`:
