@@ -2,18 +2,17 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-/// Generic animacja-deszcz emoji. Podajesz listę glyph'ów (np. ['🚗','⛽']),
-/// widget renderuje ~20 sztuk spadających z górnej krawędzi z różnymi
-/// rozmiarami, rotacją i opóźnieniem. Używane do "ekspresyjnych" wydatków
-/// per kategoria (transport, zdrowie, dzieci, rozrywka, itp.).
+/// Animacja "wybuch ze środka". Emoji startują w centrum, eksplodują na
+/// losowe kierunki (angle 0..2π), obracają się, pulsują skalą, lecą
+/// w stronę krawędzi ekranu. Po przelocie znikają fade-out.
 ///
-/// Dla "specjalnych" animacji (np. T-rex zjadający burgera) używaj
-/// dedykowanych widgetów. Ten widget jest dla "typowych" wydatków.
+/// Bardziej "śmieszne" niż prosty deszcz — każdy particle ma indywidualny
+/// charakter (rotation speed, scale wave, kierunek).
 class EmojiBurst extends StatefulWidget {
   const EmojiBurst({
     required this.glyphs,
-    this.count = 22,
-    this.duration = const Duration(milliseconds: 1400),
+    this.count = 24,
+    this.duration = const Duration(milliseconds: 1300),
     super.key,
   });
 
@@ -35,7 +34,7 @@ class EmojiBurst extends StatefulWidget {
     );
     overlay.insert(entry);
     Future<void>.delayed(
-      const Duration(milliseconds: 1600),
+      const Duration(milliseconds: 1500),
       entry.remove,
     );
   }
@@ -58,11 +57,13 @@ class _EmojiBurstState extends State<EmojiBurst>
     _particles = List.generate(widget.count, (_) {
       return _Particle(
         glyph: widget.glyphs[rng.nextInt(widget.glyphs.length)],
-        startXFraction: rng.nextDouble(),
-        fontSize: 28.0 + rng.nextDouble() * 22,
-        rotation: (rng.nextDouble() - 0.5) * 0.8,
-        fallDelay: rng.nextDouble() * 0.35,
-        horizontalSway: (rng.nextDouble() - 0.5) * 50,
+        angle: rng.nextDouble() * 2 * pi,
+        distance: 180.0 + rng.nextDouble() * 220,
+        fontSize: 32.0 + rng.nextDouble() * 24,
+        rotationSpeed: (rng.nextDouble() - 0.5) * 8,
+        scaleWave: rng.nextDouble() * 0.6 + 0.4,
+        startDelay: rng.nextDouble() * 0.15,
+        gravity: 0.5 + rng.nextDouble() * 0.5,
       );
     });
   }
@@ -82,6 +83,7 @@ class _EmojiBurstState extends State<EmojiBurst>
           painter: _BurstPainter(
             t: _controller.value,
             particles: _particles,
+            screenSize: MediaQuery.of(context).size,
           ),
           size: MediaQuery.of(context).size,
         );
@@ -93,49 +95,61 @@ class _EmojiBurstState extends State<EmojiBurst>
 class _Particle {
   const _Particle({
     required this.glyph,
-    required this.startXFraction,
+    required this.angle,
+    required this.distance,
     required this.fontSize,
-    required this.rotation,
-    required this.fallDelay,
-    required this.horizontalSway,
+    required this.rotationSpeed,
+    required this.scaleWave,
+    required this.startDelay,
+    required this.gravity,
   });
 
   final String glyph;
-  final double startXFraction;
+  final double angle;
+  final double distance;
   final double fontSize;
-  final double rotation;
-  final double fallDelay;
-  final double horizontalSway;
+  final double rotationSpeed;
+  final double scaleWave;
+  final double startDelay;
+  final double gravity;
 }
 
 class _BurstPainter extends CustomPainter {
-  _BurstPainter({required this.t, required this.particles});
+  _BurstPainter({
+    required this.t,
+    required this.particles,
+    required this.screenSize,
+  });
 
   final double t;
   final List<_Particle> particles;
+  final Size screenSize;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.5);
     for (final p in particles) {
-      final particleT =
-          ((t - p.fallDelay) / (1.0 - p.fallDelay)).clamp(0.0, 1.0);
-      if (particleT == 0) continue;
+      final localT =
+          ((t - p.startDelay) / (1 - p.startDelay)).clamp(0.0, 1.0);
+      if (localT == 0) continue;
 
-      final startY = -p.fontSize;
-      final endY = size.height + p.fontSize;
-      final y = startY + (endY - startY) * particleT;
-      final x = p.startXFraction * size.width +
-          sin(particleT * 2 * pi) * p.horizontalSway;
+      final radial = Curves.easeOut.transform(localT) * p.distance;
+      final fall = p.gravity * 120 * localT * localT;
 
+      final x = center.dx + cos(p.angle) * radial;
+      final y = center.dy + sin(p.angle) * radial + fall;
+
+      final scale =
+          1.0 + p.scaleWave * sin(localT * pi * 3) * (1 - localT);
       final opacity =
-          particleT < 0.85 ? 1.0 : (1 - (particleT - 0.85) / 0.15);
-      final rotationNow = p.rotation + particleT * pi * 0.5;
+          localT < 0.7 ? 1.0 : (1 - (localT - 0.7) / 0.3);
+      final rotation = p.rotationSpeed * localT;
 
       final tp = TextPainter(
         text: TextSpan(
           text: p.glyph,
           style: TextStyle(
-            fontSize: p.fontSize,
+            fontSize: p.fontSize * scale,
             color: Colors.white.withValues(alpha: opacity),
           ),
         ),
@@ -145,7 +159,7 @@ class _BurstPainter extends CustomPainter {
       canvas
         ..save()
         ..translate(x, y)
-        ..rotate(rotationNow);
+        ..rotate(rotation);
       tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
       canvas.restore();
     }
@@ -155,51 +169,39 @@ class _BurstPainter extends CustomPainter {
   bool shouldRepaint(_BurstPainter oldDelegate) => oldDelegate.t != t;
 }
 
-/// Mapowanie kategorii (po słowach kluczowych w nazwie) na zestaw emoji.
-/// `null` = brak dopasowania → caller użyje fallback'a (ExpenseFlash).
-///
-/// Sprawdzamy lowercase + bez polskich znaków po podstawowych prefiksach,
-/// żeby user mógł nazwać kategorię "Spożywcze", "Spożywka", "Jedzenie" itp.
+/// Mapowanie kategorii na zestaw emoji. Kategorie z dedykowanymi
+/// animowanymi scenami (Transport, Zdrowie, Rachunki, Spożywcze) są
+/// obsłużone osobnymi widgetami — tutaj pomijamy.
 List<String>? emojisForCategory(String categoryName) {
   final n = categoryName.toLowerCase();
   bool has(List<String> keys) => keys.any(n.contains);
 
-  if (has(['transport', 'paliw', 'samoch'])) {
-    return const ['🚗', '⛽', '🛣️', '🚙'];
-  }
-  if (has(['zdrow', 'aptek', 'lekarz', 'medyc'])) {
-    return const ['💊', '🩺', '🏥', '💉'];
-  }
   if (has(['dziec', 'niemowl', 'maluch'])) {
-    return const ['🧸', '🍼', '🎈', '🚼'];
+    return const ['🧸', '🍼', '🎈', '🚼', '🍭'];
   }
   if (has(['rozryw', 'kino', 'gier', 'koncert'])) {
-    return const ['🎬', '🍿', '🎮', '🎤'];
+    return const ['🎬', '🍿', '🎮', '🎤', '🎉'];
   }
   if (has(['mieszk', 'dom', 'remont', 'czynsz'])) {
-    return const ['🏠', '🛋️', '🪴', '🔨'];
+    return const ['🏠', '🛋️', '🪴', '🔨', '🔧'];
   }
   if (has(['ubran', 'odzież', 'butów'])) {
-    return const ['👕', '👗', '👟', '🧥'];
-  }
-  if (has(['rachun', 'prąd', 'gaz', 'wod', 'internet'])) {
-    return const ['📄', '💡', '💸', '⚡'];
+    return const ['👕', '👗', '👟', '🧥', '🩳'];
   }
   if (has(['subskryp', 'netflix', 'spotify'])) {
-    return const ['📺', '🎵', '☁️', '🔔'];
+    return const ['📺', '🎵', '☁️', '🔔', '💳'];
   }
   if (has(['hobby', 'sport', 'siłow'])) {
-    return const ['🏋️', '⚽', '🎨', '📚'];
+    return const ['🏋️', '⚽', '🎨', '📚', '🎯'];
   }
   if (has(['uroda', 'kosmet', 'fryzj'])) {
-    return const ['💄', '💅', '💆', '✨'];
+    return const ['💄', '💅', '💆', '✨', '💇'];
   }
   if (has(['prezent', 'urodz', 'święt'])) {
-    return const ['🎁', '🎉', '🎂', '🎈'];
+    return const ['🎁', '🎉', '🎂', '🎈', '🎊'];
   }
   if (has(['oszczęd', 'inwest'])) {
-    return const ['🐷', '💰', '📈', '🏦'];
+    return const ['🐷', '💰', '📈', '🏦', '💎'];
   }
-  // Pensja / inne dochody traktujemy osobno (deszcz monet w MoneyRain).
   return null;
 }

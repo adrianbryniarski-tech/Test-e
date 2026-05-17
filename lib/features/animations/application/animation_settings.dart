@@ -21,15 +21,32 @@ enum AppAnimation {
   trexFoodFeast(
     label: 'T-rex zżerający hamburgera',
     description:
-        'Przy wydatku na Spożywcze mały T-rex przebiega przez ekran '
-        'i zjada burgera. Niech wie że to jego pieniądze.',
+        'Spożywcze: 🦖 przebiega przez ekran i pożera 🍔 z beknięciem.',
+  ),
+  carRushOnTransport(
+    label: 'Samochód z dymem i pieniędzmi',
+    description:
+        'Transport / Paliwo: 🚗 przelatuje przez ekran zostawiając '
+        '💨 i 💸 za sobą.',
+  ),
+  pharmacyHealOnHealth(
+    label: 'Leczenie pigułkami',
+    description:
+        'Zdrowie / Apteka: pigułki 💊 zlatują z 6 stron na chorego 🤧, '
+        'który po dawce zmienia się w 😎.',
+  ),
+  billsAttackOnBills(
+    label: 'Rachunki w ogniu',
+    description:
+        'Rachunki / Internet / Prąd: 📄 spadają z każdej strony do '
+        'środka, zapalają się 🔥, a pieniądze 💸 ulatują w górę.',
   ),
   categoryEmojiRain(
-    label: 'Tematyczny deszcz emoji per kategoria',
+    label: 'Eksplodujące emoji dla pozostałych kategorii',
     description:
-        'Przy wydatku — auto, paliwo dla Transportu, leki dla Zdrowia, '
-        'misie dla Dzieci, popcorn dla Rozrywki itd. Po jednej animacji '
-        'dla każdej kategorii.',
+        'Pozostałe kategorie (Dzieci, Rozrywka, Mieszkanie itd.): '
+        'tematyczne emoji wybuchają ze środka ekranu z rotacją '
+        'i pulsem skali.',
   );
 
   const AppAnimation({required this.label, required this.description});
