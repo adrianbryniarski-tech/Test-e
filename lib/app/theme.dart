@@ -30,6 +30,23 @@ enum AppThemeVariant {
   mono(
     label: 'Mono',
     description: 'Czarno-białe minimum z jednym akcentem. Brutalist 2026.',
+  ),
+  cyber(
+    label: 'Cyber',
+    description:
+        'Neonowy zielony + czarne OLED. Cyberpunk 2026 — najlepszy w '
+        'trybie ciemnym.',
+  ),
+  synthwave(
+    label: 'Synthwave',
+    description:
+        'Magenta + cyan retro 80s. Mocny vibe, świetlist w ciemnym.',
+  ),
+  galaktyka(
+    label: 'Galaktyka',
+    description:
+        'Deep space purple/indigo + neonowe gwiazdy. Głęboka czerń OLED '
+        'z fioletowymi akcentami.',
   );
 
   const AppThemeVariant({required this.label, required this.description});
@@ -168,6 +185,35 @@ class AppTheme {
           surface: isDark ? const Color(0xFF111111) : const Color(0xFFF2F2F2),
           cardElevation: 0,
         ),
+
+      // Cyberpunk neon — najjaskrawszy w dark mode, OLED-friendly czerń.
+      // Neonowy zielony (jak Matrix) na pure black tle.
+      AppThemeVariant.cyber => _ThemeSpec(
+          seed: isDark ? const Color(0xFF00FF88) : const Color(0xFF00C46A),
+          background:
+              isDark ? const Color(0xFF000000) : const Color(0xFFF0FAF5),
+          surface: isDark ? const Color(0xFF0A1410) : const Color(0xFFE0F7E8),
+          cardElevation: isDark ? 0 : 1,
+        ),
+
+      // Synthwave / retro 80s — magenta + cyan, neonowy glow w ciemnym.
+      AppThemeVariant.synthwave => _ThemeSpec(
+          seed: isDark ? const Color(0xFFFF3EA5) : const Color(0xFFE91E63),
+          background:
+              isDark ? const Color(0xFF0D0421) : const Color(0xFFFFF0F8),
+          surface: isDark ? const Color(0xFF1A0935) : const Color(0xFFFEE0F0),
+          cardElevation: isDark ? 0 : 1,
+        ),
+
+      // Deep space / galaxy — fioletowo-indigo na pure black, neonowe
+      // gwiazdy. Wow factor dla dark, lekkie pastele dla light.
+      AppThemeVariant.galaktyka => _ThemeSpec(
+          seed: isDark ? const Color(0xFFB36CFF) : const Color(0xFF7C4DFF),
+          background:
+              isDark ? const Color(0xFF030014) : const Color(0xFFF5F0FF),
+          surface: isDark ? const Color(0xFF120829) : const Color(0xFFEAE0FF),
+          cardElevation: isDark ? 0 : 1,
+        ),
     };
   }
 
@@ -178,6 +224,9 @@ class AppTheme {
       AppThemeVariant.szklo => 28,
       AppThemeVariant.zachod => 22,
       AppThemeVariant.mono => 4,
+      AppThemeVariant.cyber => 8, // ostry, terminal-like
+      AppThemeVariant.synthwave => 16,
+      AppThemeVariant.galaktyka => 24,
     };
   }
 
@@ -211,6 +260,20 @@ class AppTheme {
           fontWeight: FontWeight.w800,
         ),
         titleLarge: common.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+      );
+    }
+
+    // Cyber — szerokie letter-spacing dla "terminal" feel.
+    if (variant == AppThemeVariant.cyber) {
+      return common.copyWith(
+        displayLarge: common.displayLarge?.copyWith(
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+        displayMedium: common.displayMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.4,
+        ),
       );
     }
 
