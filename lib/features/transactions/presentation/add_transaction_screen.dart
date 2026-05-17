@@ -1,0 +1,344 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+
+import '../../../shared/widgets/category_avatar.dart';
+import '../../../shared/widgets/inline_error.dart';
+import '../../../shared/widgets/loading_filled_button.dart';
+import '../../categories/application/category_providers.dart';
+import '../../categories/data/category.dart';
+import '../../household/application/household_providers.dart';
+import '../application/transaction_providers.dart';
+import '../data/transaction.dart';
+import '../data/transaction_repository.dart';
+
+/// Form ręcznego dodawania transakcji.
+///
+/// Pola: typ (segmented control), kwota, kategoria (filtrowana po typie),
+/// data (datepicker), opis (opcjonalny), notatka (opcjonalna).
+///
+/// Walidacje są inline na poszczególnych polach; submit blokowany dopóki
+/// wszystkie poprawne. Po sukcesie wraca do ekranu listy.
+class AddTransactionScreen extends ConsumerStatefulWidget {
+  const AddTransactionScreen({super.key});
+
+  @override
+  ConsumerState<AddTransactionScreen> createState() =>
+      _AddTransactionScreenState();
+}
+
+class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _noteController = TextEditingController();
+
+  TransactionType _type = TransactionType.expense;
+  Category? _category;
+  DateTime _occurredAt = DateTime.now();
+  bool _isSaving = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _descriptionController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  /// Parsuje pole kwoty na grosze (`amount_cents`). Akceptuje `,` lub `.`
+  /// jako separator dziesiętny, max 2 cyfry po przecinku.
+  int? _parseAmount(String raw) {
+    final cleaned = raw.replaceAll(' ', '').replaceAll(',', '.');
+    final parsed = double.tryParse(cleaned);
+    if (parsed == null || parsed <= 0) return null;
+    return (parsed * 100).round();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _occurredAt,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      locale: const Locale('pl', 'PL'),
+    );
+    if (picked != null) setState(() => _occurredAt = picked);
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_category == null) {
+      setState(() => _errorMessage = 'Wybierz kategorię.');
+      return;
+    }
+
+    final householdId = ref.read(currentHouseholdIdProvider).valueOrNull;
+    if (householdId == null) {
+      setState(() => _errorMessage = 'Brak gospodarstwa. Zaloguj się ponownie.');
+      return;
+    }
+
+    final amountCents = _parseAmount(_amountController.text);
+    if (amountCents == null) {
+      setState(() => _errorMessage = 'Kwota niepoprawna.');
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    final repo = ref.read(transactionRepositoryProvider);
+    final result = await repo.insert(
+      householdId: householdId,
+      occurredAt: _occurredAt,
+      amountCents: amountCents,
+      type: _type,
+      categoryId: _category!.id,
+      source: TransactionSource.manual,
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+      note: _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    switch (result) {
+      case TransactionWriteSuccess():
+        context.pop();
+      case TransactionDuplicate():
+        setState(() => _errorMessage =
+            'Ta sama transakcja jest już zapisana w bazie.');
+      case TransactionWriteFailure(:final message):
+        setState(() => _errorMessage = message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final filteredCategories = categoriesAsync.maybeWhen(
+      data: (cats) => cats.where((c) => c.type == _type).toList(),
+      orElse: () => const <Category>[],
+    );
+
+    final dateLabel = DateFormat('d MMMM y', 'pl_PL').format(_occurredAt);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Nowa transakcja')),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            children: [
+              _TypeSelector(
+                value: _type,
+                onChanged: (v) => setState(() {
+                  _type = v;
+                  // Reset wybranej kategorii jeśli nie pasuje już do nowego typu.
+                  if (_category != null && _category!.type != v) {
+                    _category = null;
+                  }
+                }),
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                textInputAction: TextInputAction.next,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                ],
+                style: theme.textTheme.headlineMedium,
+                decoration: const InputDecoration(
+                  labelText: 'Kwota (PLN)',
+                  hintText: '0,00',
+                  prefixIcon: Icon(Icons.payments_outlined),
+                ),
+                validator: (value) {
+                  final v = value?.trim() ?? '';
+                  if (v.isEmpty) return 'Wpisz kwotę.';
+                  if (_parseAmount(v) == null) return 'Kwota niepoprawna.';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              _CategoryPickerField(
+                categoriesAsync: categoriesAsync,
+                items: filteredCategories,
+                selected: _category,
+                onChanged: (c) => setState(() => _category = c),
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: _pickDate,
+                borderRadius: BorderRadius.circular(14),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Data',
+                    prefixIcon: Icon(Icons.calendar_today_outlined),
+                  ),
+                  child: Text(dateLabel),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                textInputAction: TextInputAction.next,
+                textCapitalization: TextCapitalization.sentences,
+                maxLength: 80,
+                decoration: const InputDecoration(
+                  labelText: 'Opis (opcjonalny)',
+                  hintText: 'Np. Biedronka, paliwo Orlen…',
+                  prefixIcon: Icon(Icons.short_text),
+                ),
+              ),
+              TextFormField(
+                controller: _noteController,
+                textInputAction: TextInputAction.done,
+                textCapitalization: TextCapitalization.sentences,
+                maxLines: 2,
+                maxLength: 200,
+                decoration: const InputDecoration(
+                  labelText: 'Notatka (opcjonalna)',
+                  prefixIcon: Icon(Icons.notes),
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (_errorMessage != null) ...[
+                InlineError(message: _errorMessage!),
+                const SizedBox(height: 16),
+              ],
+              LoadingFilledButton(
+                label: 'Zapisz',
+                icon: Icons.check_circle_outline,
+                isLoading: _isSaving,
+                onPressed: _save,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TypeSelector extends StatelessWidget {
+  const _TypeSelector({required this.value, required this.onChanged});
+
+  final TransactionType value;
+  final ValueChanged<TransactionType> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<TransactionType>(
+      segments: const [
+        ButtonSegment(
+          value: TransactionType.expense,
+          label: Text('Wydatek'),
+          icon: Icon(Icons.south_outlined),
+        ),
+        ButtonSegment(
+          value: TransactionType.income,
+          label: Text('Dochód'),
+          icon: Icon(Icons.north_outlined),
+        ),
+      ],
+      selected: {value},
+      onSelectionChanged: (set) => onChanged(set.first),
+    );
+  }
+}
+
+class _CategoryPickerField extends StatelessWidget {
+  const _CategoryPickerField({
+    required this.categoriesAsync,
+    required this.items,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final AsyncValue<List<Category>> categoriesAsync;
+  final List<Category> items;
+  final Category? selected;
+  final ValueChanged<Category?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return categoriesAsync.when(
+      loading: () => const _CategoryFieldShell(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 4),
+          child: SizedBox(
+            height: 22,
+            width: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.4),
+          ),
+        ),
+      ),
+      error: (e, _) => _CategoryFieldShell(
+        child: Text('Błąd: $e'),
+      ),
+      data: (_) {
+        return DropdownButtonFormField<Category>(
+          // `key` per typ wymusza rebuild dropdownu gdy user przełączy
+          // wydatek↔dochód — inaczej wewnętrzny stan FormField może
+          // zostać przy starej kategorii (poprzedniego typu).
+          key: ValueKey(items.firstOrNull?.type),
+          initialValue: selected,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Kategoria',
+            prefixIcon: Icon(Icons.category_outlined),
+          ),
+          items: items
+              .map(
+                (c) => DropdownMenuItem<Category>(
+                  value: c,
+                  child: Row(
+                    children: [
+                      CategoryAvatar(category: c, size: 28),
+                      const SizedBox(width: 12),
+                      Text(c.name),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+          validator: (v) => v == null ? 'Wybierz kategorię.' : null,
+        );
+      },
+    );
+  }
+}
+
+class _CategoryFieldShell extends StatelessWidget {
+  const _CategoryFieldShell({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: const InputDecoration(
+        labelText: 'Kategoria',
+        prefixIcon: Icon(Icons.category_outlined),
+      ),
+      child: child,
+    );
+  }
+}

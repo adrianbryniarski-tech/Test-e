@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/router.dart';
@@ -11,6 +12,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   Env.assertConfigured();
+
+  // Inicjalizacja danych locale dla DateFormat — bez tego polskie nazwy
+  // miesięcy/dni rzucają `LocaleDataException`.
+  await initializeDateFormatting('pl_PL');
 
   await Supabase.initialize(
     url: Env.supabaseUrl,

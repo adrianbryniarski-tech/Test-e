@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../features/auth/application/auth_providers.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/verify_otp_screen.dart';
 import '../features/household/application/household_providers.dart';
@@ -14,6 +13,8 @@ import '../features/household/presentation/create_household_screen.dart';
 import '../features/household/presentation/invitation_share_screen.dart';
 import '../features/household/presentation/join_household_screen.dart';
 import '../features/household/presentation/onboarding_choice_screen.dart';
+import '../features/transactions/presentation/add_transaction_screen.dart';
+import '../features/transactions/presentation/transactions_list_screen.dart';
 
 /// Globalny router z redirectami zależnymi od stanu auth i gospodarstwa.
 ///
@@ -112,7 +113,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const _HomePlaceholder(),
+        builder: (context, state) => const TransactionsListScreen(),
+      ),
+      GoRoute(
+        path: '/transactions/add',
+        builder: (context, state) => const AddTransactionScreen(),
       ),
       GoRoute(
         path: '/settings/categories',
@@ -159,51 +164,6 @@ class _BootLoadingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
-class _HomePlaceholder extends ConsumerWidget {
-  const _HomePlaceholder();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
-    final household = ref.watch(currentHouseholdIdProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Nasz budżet domowy'),
-        actions: [
-          IconButton(
-            tooltip: 'Wyloguj',
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authRepositoryProvider).signOut(),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Zalogowany: ${user?.email ?? "(nieznany)"}',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Gospodarstwo: ${household.valueOrNull ?? "(brak)"}',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Dashboard — Ticket 5.',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
