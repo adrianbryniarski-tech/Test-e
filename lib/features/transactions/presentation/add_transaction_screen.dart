@@ -3,14 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:nasz_budzet_domowy/features/animations/application/animation_settings.dart';
-import 'package:nasz_budzet_domowy/features/animations/presentation/bills_attack.dart';
-import 'package:nasz_budzet_domowy/features/animations/presentation/car_rush.dart';
-import 'package:nasz_budzet_domowy/features/animations/presentation/emoji_burst.dart';
-import 'package:nasz_budzet_domowy/features/animations/presentation/expense_flash.dart';
-import 'package:nasz_budzet_domowy/features/animations/presentation/money_rain.dart';
-import 'package:nasz_budzet_domowy/features/animations/presentation/pharmacy_heal.dart';
-import 'package:nasz_budzet_domowy/features/animations/presentation/trex_food_feast.dart';
+import 'package:nasz_budzet_domowy/features/animations/presentation/animation_player.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
@@ -85,54 +78,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   /// togglami w ustawieniach. Wywołane PRZED `context.pop()` — apka jeszcze
   /// jest na ekranie, więc Overlay rysuje się nad listą po powrocie.
   void _playSuccessAnimation() {
-    final settings = ref.read(animationSettingsProvider);
-    final cat = _category;
-
-    if (_type == TransactionType.income) {
-      if (settings.isOn(AppAnimation.moneyRainOnIncome)) {
-        MoneyRain.show(context);
-      }
-      if (settings.isOn(AppAnimation.chaChingOnIncome)) {
-        // unawaited — dźwięk leci równolegle do animacji, nie czekamy.
-        ref.read(soundServiceProvider).playChaChing();
-      }
-      return;
-    }
-
-    // Wydatek — priorytety od dedykowanych animowanych scen do generycznego
-    // explosion emoji:
-    final name = cat?.name.toLowerCase() ?? '';
-    bool nameHas(List<String> keys) => keys.any(name.contains);
-
-    if (nameHas(['spożywcze', 'jedzenie']) &&
-        settings.isOn(AppAnimation.trexFoodFeast)) {
-      TrexFoodFeast.show(context);
-      return;
-    }
-    if (nameHas(['transport', 'paliw', 'samoch']) &&
-        settings.isOn(AppAnimation.carRushOnTransport)) {
-      CarRush.show(context);
-      return;
-    }
-    if (nameHas(['zdrow', 'aptek', 'lekarz', 'medyc']) &&
-        settings.isOn(AppAnimation.pharmacyHealOnHealth)) {
-      PharmacyHeal.show(context);
-      return;
-    }
-    if (nameHas(['rachun', 'prąd', 'gaz', 'wod', 'internet']) &&
-        settings.isOn(AppAnimation.billsAttackOnBills)) {
-      BillsAttack.show(context);
-      return;
-    }
-    final glyphs = cat == null ? null : emojisForCategory(cat.name);
-    if (glyphs != null &&
-        settings.isOn(AppAnimation.categoryEmojiRain)) {
-      EmojiBurst.show(context, glyphs: glyphs);
-      return;
-    }
-    if (settings.isOn(AppAnimation.expenseFlashOnExpense)) {
-      ExpenseFlash.show(context);
-    }
+    AnimationPlayer(ref).play(
+      context: context,
+      type: _type,
+      category: _category,
+    );
   }
 
   /// Parsuje pole kwoty na grosze (`amount_cents`). Akceptuje `,` lub `.`

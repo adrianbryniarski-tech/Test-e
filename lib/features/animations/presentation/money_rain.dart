@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 /// N osobnych widgetów z AnimationBuildera.
 class MoneyRain extends StatefulWidget {
   const MoneyRain({
-    this.duration = const Duration(milliseconds: 1500),
+    this.duration = const Duration(milliseconds: 3000),
     super.key,
   });
 
@@ -22,19 +22,17 @@ class MoneyRain extends StatefulWidget {
   static void show(BuildContext context, {Duration? duration}) {
     final overlay = Overlay.maybeOf(context);
     if (overlay == null) return;
+    final effective = duration ?? const Duration(milliseconds: 3000);
     final entry = OverlayEntry(
       builder: (_) => Positioned.fill(
         child: IgnorePointer(
-          child: MoneyRain(
-            duration: duration ?? const Duration(milliseconds: 1500),
-          ),
+          child: MoneyRain(duration: effective),
         ),
       ),
     );
     overlay.insert(entry);
     Future<void>.delayed(
-      (duration ?? const Duration(milliseconds: 1500)) +
-          const Duration(milliseconds: 200),
+      effective + const Duration(milliseconds: 300),
       entry.remove,
     );
   }
@@ -56,14 +54,20 @@ class _MoneyRainState extends State<MoneyRain>
     _controller = AnimationController(vsync: this, duration: widget.duration)
       ..forward();
     final rng = Random();
-    _particles = List.generate(28, (i) {
+    // Każda cząstka: indywidualny `fallDuration` (10-45% długości animacji)
+    // + indywidualny `fallDelay` rozłożony na 0..80% długości. Razem to
+    // znaczy że monety spadają losowo przez cały czas — nie wszystkie
+    // na raz, nie wszystkie z góry. ~50 cząstek przy duracji 3s.
+    _particles = List.generate(48, (_) {
       return _Particle(
         glyph: _glyphs[rng.nextInt(_glyphs.length)],
         startXFraction: rng.nextDouble(),
-        fontSize: 24.0 + rng.nextDouble() * 24,
+        fontSize: 22.0 + rng.nextDouble() * 28,
         rotation: (rng.nextDouble() - 0.5) * 0.8,
-        fallDelay: rng.nextDouble() * 0.3,
-        horizontalSway: (rng.nextDouble() - 0.5) * 60,
+        fallDelay: rng.nextDouble() * 0.8,
+        fallDuration: 0.10 + rng.nextDouble() * 0.35,
+        horizontalSway: (rng.nextDouble() - 0.5) * 70,
+        rotationSpeed: (rng.nextDouble() - 0.5) * 2.5,
       );
     });
   }
@@ -99,15 +103,22 @@ class _Particle {
     required this.fontSize,
     required this.rotation,
     required this.fallDelay,
+    required this.fallDuration,
     required this.horizontalSway,
+    required this.rotationSpeed,
   });
 
   final String glyph;
   final double startXFraction;
   final double fontSize;
   final double rotation;
+  /// Kiedy ta cząstka zaczyna spadać (0..1 jako frakcja całej animacji).
   final double fallDelay;
+  /// Jak długo spada od pojawienia się (0..1 jako frakcja całej animacji).
+  /// Mniejsza = szybsza, większa = wolniejsza.
+  final double fallDuration;
   final double horizontalSway;
+  final double rotationSpeed;
 }
 
 class _RainPainter extends CustomPainter {
@@ -124,21 +135,25 @@ class _RainPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final p in particles) {
-      final particleT = ((t - p.fallDelay) / (1.0 - p.fallDelay))
-          .clamp(0.0, 1.0);
-      if (particleT == 0) continue;
+      // Indywidualny przedział życia tej cząstki: [fallDelay, fallDelay
+      // + fallDuration]. Poza tym przedziałem nie rysujemy.
+      final localT = (t - p.fallDelay) / p.fallDuration;
+      if (localT <= 0 || localT > 1.0) continue;
 
       final startY = -p.fontSize;
       final endY = size.height + p.fontSize;
-      final y = startY + (endY - startY) * particleT;
+      final y = startY + (endY - startY) * localT;
 
-      final swayProgress = particleT * 2 * pi;
+      final swayProgress = localT * 2 * pi;
       final x = p.startXFraction * size.width +
           sin(swayProgress) * p.horizontalSway;
 
-      final opacity =
-          particleT < 0.85 ? 1.0 : (1 - (particleT - 0.85) / 0.15);
-      final rotationNow = p.rotation + particleT * pi * 0.6;
+      // Fade-in pierwsze 10%, fade-out ostatnie 15%. Środek pełna widoczność.
+      final opacity = localT < 0.10
+          ? localT / 0.10
+          : (localT < 0.85 ? 1.0 : (1 - (localT - 0.85) / 0.15));
+      final rotationNow =
+          p.rotation + localT * pi * 2 * p.rotationSpeed;
 
       final tp = TextPainter(
         text: TextSpan(
