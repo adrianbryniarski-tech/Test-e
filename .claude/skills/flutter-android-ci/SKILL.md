@@ -5,6 +5,74 @@ description: Konfiguracja buildu Flutter Android w GitHub Actions dla projektu "
 
 # Flutter Android CI — lekcje z bólu
 
+## ⚡ PRE-FLIGHT CHECKLIST — zrób TO ZANIM zaczniesz buildować APK
+
+Te 5 rzeczy są **prawie zawsze potrzebne** w 2026 dla projektów Flutter z natywnymi pluginami (notifications, ASR, camera, biometria). Skonfiguruj WSZYSTKIE od razu w jednym commicie — inaczej zmarnujesz 30+ min CI iterując przez padnięte buildy i sfrustrujesz użytkownika.
+
+**1. Commituj cały `android/` scaffolding** (nie polegaj na `flutter create` w CI).
+
+**2. `android/build.gradle.kts`** — namespace patch dla starych pluginów. Blok MUSI być PRZED `evaluationDependsOn`:
+```kotlin
+subprojects {
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            val androidExt = project.extensions.findByName("android")
+            if (androidExt is com.android.build.gradle.LibraryExtension &&
+                androidExt.namespace == null
+            ) {
+                androidExt.namespace = "com.${project.name.replace("-", "_")}"
+            }
+        }
+    }
+}
+
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+```
+
+**3. `android/app/build.gradle.kts`** — core library desugaring + multidex (wymagane przez `flutter_local_notifications` ≥18):
+```kotlin
+android {
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    defaultConfig {
+        multiDexEnabled = true
+        // ... applicationId, minSdk, etc.
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+```
+
+**4. `AndroidManifest.xml`** — uprawnienia + `allowBackup="false"` dla apki z danymi finansowymi:
+```xml
+<uses-permission android:name="android.permission.INTERNET"/>
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+<uses-permission android:name="android.permission.RECORD_AUDIO"/>  <!-- Vosk -->
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>  <!-- f_l_n -->
+
+<application
+    android:allowBackup="false"
+    android:fullBackupContent="false"
+    android:dataExtractionRules="@xml/data_extraction_rules"
+    ...>
+```
+
+**5. Workflow `.github/workflows/build-apk-debug.yml`** — dorzuć w jednym z pierwszych commitów (NIE jako oddzielny PR pod koniec):
+- `actions/checkout@v4`
+- `subosito/flutter-action@v2` (channel: stable, cache: true)
+- `flutter pub get`
+- `flutter build apk --debug --dart-define=...`
+- `actions/upload-artifact@v4` na `build/app/outputs/flutter-apk/app-debug.apk`
+
+**Jak zrobisz wszystkie 5 od razu, build przejdzie za pierwszym razem.** Nie próbuj ich dodawać reaktywnie po każdym padniętym buildzie — znasz tę listę z góry.
+
 ## TL;DR — najważniejsza zasada
 
 **Commituj cały `android/` scaffolding do gita.** NIE polegaj na `flutter create` w CI do generowania `build.gradle.kts`, `MainActivity.kt`, styles, mipmap. To prowadzi do "działa lokalnie, pada w CI" — różne wersje Flutter stable generują różne pliki.
@@ -69,6 +137,14 @@ description: Konfiguracja buildu Flutter Android w GitHub Actions dla projektu "
   }
   ```
   To samo zadziała dla każdego innego starego plugin'a w Flutter ecosystem'ie.
+
+### flutter_local_notifications (≥18.x)
+- **CRITICAL: wymaga `coreLibraryDesugaring`** (używa `java.time.*`). Bez tego build pada na `:app:checkDebugAarMetadata`:
+  > Dependency ':flutter_local_notifications' requires core library desugaring to be enabled for :app.
+
+  Fix: `isCoreLibraryDesugaringEnabled = true` + `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")` w `android/app/build.gradle.kts` (pełny przykład w pre-flight checklist na górze).
+- Wersja `desugar_jdk_libs` musi być **2.1.4 lub nowsza** dla f_l_n 18+. Starsze (1.x) nie mają wszystkich potrzebnych API.
+- Razem często idzie `multiDexEnabled = true` — bez tego dex może przekroczyć limit 65k metod.
 
 ### sqflite + sqflite_common_ffi
 - W produkcji używaj `sqflite` (zwykły).
