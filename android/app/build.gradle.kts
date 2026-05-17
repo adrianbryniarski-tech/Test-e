@@ -22,6 +22,24 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    // Stały debug keystore commitowany do repo (`android/app/debug.keystore`,
+    // hasła: `android` / `android` — to publiczne defaulty Android SDK).
+    // Bez tego każdy CI build używałby świeżo wygenerowanego keystore z
+    // ~/.android/debug.keystore na runnerze → każdy APK miał inną sygnaturę
+    // → Android odmawia update'u istniejącej apki ("package conflict").
+    //
+    // Commitowanie debug keystore jest BEZPIECZNE — to nie są sekrety,
+    // hasła to publiczny default. Release keystore (jeśli kiedyś dorobimy)
+    // ZOSTAJE w .gitignore + GitHub Secrets.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     defaultConfig {
         applicationId = "pl.naszbudzetdomowy.nasz_budzet_domowy"
         // vosk_flutter_2 wymaga minSdk 30 (Android 11+). Dla apki na 2

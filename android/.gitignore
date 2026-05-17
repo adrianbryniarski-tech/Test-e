@@ -12,3 +12,6 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Wyjątek: debug.keystore JEST commitowany (publiczne defaulty Android,
+# potrzebne do spójnej sygnatury między CI buildami).
+!app/debug.keystore
