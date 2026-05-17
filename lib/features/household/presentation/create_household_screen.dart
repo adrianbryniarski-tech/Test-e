@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CreateHouseholdScreen extends ConsumerStatefulWidget {
   const CreateHouseholdScreen({super.key});
@@ -44,11 +45,16 @@ class _CreateHouseholdScreenState extends ConsumerState<CreateHouseholdScreen> {
       ref.invalidate(currentHouseholdIdProvider);
       if (!mounted) return;
       context.pushReplacement('/onboarding/invite/${invitation.code}');
+    } on PostgrestException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Nie udało się stworzyć gospodarstwa: '
+            '${e.code ?? "?"} ${e.message}';
+      });
     } on Object catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage =
-            'Nie udało się stworzyć gospodarstwa: ${e.runtimeType}.';
+        _errorMessage = 'Nie udało się stworzyć gospodarstwa: $e';
       });
     } finally {
       if (mounted) setState(() => _isCreating = false);
