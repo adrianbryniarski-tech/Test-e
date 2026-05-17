@@ -132,6 +132,25 @@ Standardowe kody Postgres:
 - `42883` undefined function — RPC funkcja nie istnieje (migracja stara?)
 - `PT406` PostgREST: row not found dla `.single()`
 
+## ⚠️ #5 — Realtime NIE jest włączony domyślnie
+
+Klasyk Supabase setup. Default publication `supabase_realtime` ma tylko
+schema `realtime.*` — user-space tables MUSZĄ być explicit dodane,
+inaczej `supabase.from(X).stream(...)` w Flutter robi tylko pierwszy
+SELECT przy starcie subskrypcji. Po dodaniu wiersza klient NIE dostaje
+pusha — wygląda jakby UI był "zamrożony" w starym stanie. Restart apki
+pokazuje świeże dane.
+
+Fix w migracji:
+```sql
+alter publication supabase_realtime add table transactions;
+alter publication supabase_realtime add table categories;
+alter publication supabase_realtime add table budgets;
+-- ... każda tabela z której Flutter używa .stream()
+```
+
+Realtime respektuje RLS — nie martw się o leak danych.
+
 ## Lekcja meta
 
 Migracje SQL z RLS są nietrywialne. Po każdej dłuższej migracji uruchom
