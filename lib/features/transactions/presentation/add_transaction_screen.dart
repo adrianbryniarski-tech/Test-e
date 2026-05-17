@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:nasz_budzet_domowy/features/animations/application/animation_settings.dart';
+import 'package:nasz_budzet_domowy/features/animations/presentation/bills_attack.dart';
+import 'package:nasz_budzet_domowy/features/animations/presentation/car_rush.dart';
 import 'package:nasz_budzet_domowy/features/animations/presentation/emoji_burst.dart';
 import 'package:nasz_budzet_domowy/features/animations/presentation/expense_flash.dart';
 import 'package:nasz_budzet_domowy/features/animations/presentation/money_rain.dart';
+import 'package:nasz_budzet_domowy/features/animations/presentation/pharmacy_heal.dart';
 import 'package:nasz_budzet_domowy/features/animations/presentation/trex_food_feast.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
@@ -92,14 +95,29 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       return;
     }
 
-    // Wydatek — priorytety od najbardziej specyficznych do generycznych:
-    // 1) Spożywcze → T-rex easter egg (jeśli włączony)
-    // 2) Pasujący zestaw emoji dla kategorii (transport, zdrowie, dzieci…)
-    // 3) Czerwony flash jako fallback (jeśli włączony)
-    if (cat != null &&
-        cat.name.toLowerCase().contains('spożywcze') &&
+    // Wydatek — priorytety od dedykowanych animowanych scen do generycznego
+    // explosion emoji:
+    final name = cat?.name.toLowerCase() ?? '';
+    bool nameHas(List<String> keys) => keys.any(name.contains);
+
+    if (nameHas(['spożywcze', 'jedzenie']) &&
         settings.isOn(AppAnimation.trexFoodFeast)) {
       TrexFoodFeast.show(context);
+      return;
+    }
+    if (nameHas(['transport', 'paliw', 'samoch']) &&
+        settings.isOn(AppAnimation.carRushOnTransport)) {
+      CarRush.show(context);
+      return;
+    }
+    if (nameHas(['zdrow', 'aptek', 'lekarz', 'medyc']) &&
+        settings.isOn(AppAnimation.pharmacyHealOnHealth)) {
+      PharmacyHeal.show(context);
+      return;
+    }
+    if (nameHas(['rachun', 'prąd', 'gaz', 'wod', 'internet']) &&
+        settings.isOn(AppAnimation.billsAttackOnBills)) {
+      BillsAttack.show(context);
       return;
     }
     final glyphs = cat == null ? null : emojisForCategory(cat.name);
