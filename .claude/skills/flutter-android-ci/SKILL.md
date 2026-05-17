@@ -50,6 +50,25 @@ description: Konfiguracja buildu Flutter Android w GitHub Actions dla projektu "
   }
   ```
 - Model NIE jest bundlowany — apka pobiera w runtime do `getApplicationSupportDirectory()`.
+- **CRITICAL: Namespace fix wymagany dla AGP 8+.** Plugin 1.0.5 wydany 2 lata temu nie ustawia `namespace` w swoim `android/build.gradle`. Build pada z:
+  > A problem occurred configuring project ':vosk_flutter_2'. Namespace not specified.
+
+  Fix w głównym `android/build.gradle.kts` (NIE w `app/build.gradle.kts`):
+  ```kotlin
+  subprojects {
+      afterEvaluate {
+          if (project.hasProperty("android")) {
+              val androidExt = project.extensions.findByName("android")
+              if (androidExt is com.android.build.gradle.LibraryExtension &&
+                  androidExt.namespace == null
+              ) {
+                  androidExt.namespace = "com.${project.name.replace("-", "_")}"
+              }
+          }
+      }
+  }
+  ```
+  To samo zadziała dla każdego innego starego plugin'a w Flutter ecosystem'ie.
 
 ### sqflite + sqflite_common_ffi
 - W produkcji używaj `sqflite` (zwykły).
