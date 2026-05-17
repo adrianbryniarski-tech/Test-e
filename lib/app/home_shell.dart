@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nasz_budzet_domowy/features/budgets/presentation/budgets_screen.dart';
 import 'package:nasz_budzet_domowy/features/categories/presentation/categories_screen.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:nasz_budzet_domowy/features/transactions/presentation/transactions_list_screen.dart';
 
 /// Główny shell apki z dolną nawigacją M3.
-/// Trzy zakładki: Dashboard, Transakcje, Kategorie.
+/// Cztery zakładki: Dashboard, Transakcje, Budżety, Kategorie.
 /// FAB (+) zawsze widoczny — otwiera ekran dodawania transakcji.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -20,6 +21,7 @@ class _HomeShellState extends State<HomeShell> {
   static const _screens = [
     DashboardScreen(),
     TransactionsListScreen(),
+    BudgetsScreen(),
     CategoriesScreen(),
   ];
 
@@ -44,6 +46,11 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.receipt_long_outlined),
             selectedIcon: Icon(Icons.receipt_long),
             label: 'Transakcje',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.savings_outlined),
+            selectedIcon: Icon(Icons.savings),
+            label: 'Budżety',
           ),
           NavigationDestination(
             icon: Icon(Icons.category_outlined),

@@ -1,8 +1,26 @@
 import 'package:nasz_budzet_domowy/core/supabase/supabase_client.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
+import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Read-only repository dla v1 — CRUD (insert/update/delete + reasignment)
-/// przychodzi z Ticketem 7.
+/// Wynik próby zapisu kategorii.
+sealed class CategoryWriteResult {
+  const CategoryWriteResult();
+}
+
+class CategoryWriteSuccess extends CategoryWriteResult {
+  const CategoryWriteSuccess();
+}
+
+class CategoryDuplicateName extends CategoryWriteResult {
+  const CategoryDuplicateName();
+}
+
+class CategoryWriteFailure extends CategoryWriteResult {
+  const CategoryWriteFailure(this.message);
+  final String message;
+}
+
 class CategoryRepository {
   const CategoryRepository();
 
@@ -14,5 +32,91 @@ class CategoryRepository {
         .eq('household_id', householdId)
         .order('name')
         .map((rows) => rows.map(Category.fromJson).toList());
+  }
+
+  /// Dodaje nową własną kategorię. RLS blokuje insert z `is_system=true`.
+  Future<CategoryWriteResult> insert({
+    required String householdId,
+    required String name,
+    required String icon,
+    required String colorHex,
+    required TransactionType type,
+  }) async {
+    try {
+      await supabase.from('categories').insert({
+        'household_id': householdId,
+        'name': name,
+        'icon': icon,
+        'color': colorHex,
+        'type': type.toDbValue(),
+        'is_system': false,
+      });
+      return const CategoryWriteSuccess();
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') return const CategoryDuplicateName();
+      return CategoryWriteFailure(e.message);
+    }
+  }
+
+  /// Aktualizuje własną kategorię. System (`is_system=true`) jest blokowany
+  /// przez RLS — UI nie powinien w ogóle pokazywać edycji.
+  Future<CategoryWriteResult> update({
+    required String id,
+    required String name,
+    required String icon,
+    required String colorHex,
+    required TransactionType type,
+  }) async {
+    try {
+      await supabase.from('categories').update({
+        'name': name,
+        'icon': icon,
+        'color': colorHex,
+        'type': type.toDbValue(),
+      }).eq('id', id);
+      return const CategoryWriteSuccess();
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') return const CategoryDuplicateName();
+      return CategoryWriteFailure(e.message);
+    }
+  }
+
+  /// Usuwa kategorię bez transakcji. Zakłada, że caller sprawdził pusty
+  /// licznik — jeśli są transakcje, FK constraint zwróci błąd.
+  Future<CategoryWriteResult> delete(String id) async {
+    try {
+      await supabase.from('categories').delete().eq('id', id);
+      return const CategoryWriteSuccess();
+    } on PostgrestException catch (e) {
+      return CategoryWriteFailure(e.message);
+    }
+  }
+
+  /// Usuwa kategorię z transakcjami — najpierw atomowo reasignuje
+  /// transakcje do `targetId` przez RPC `delete_category_with_reassign`.
+  Future<CategoryWriteResult> deleteWithReassign({
+    required String oldId,
+    required String targetId,
+  }) async {
+    try {
+      await supabase.rpc<void>(
+        'delete_category_with_reassign',
+        params: {'p_old_id': oldId, 'p_target_id': targetId},
+      );
+      return const CategoryWriteSuccess();
+    } on PostgrestException catch (e) {
+      return CategoryWriteFailure(_humanizeRpcError(e));
+    }
+  }
+
+  String _humanizeRpcError(PostgrestException e) {
+    return switch (e.code) {
+      'P0010' => 'Nie można usunąć kategorii systemowej.',
+      'P0011' => 'Kategoria docelowa należy do innego gospodarstwa.',
+      'P0012' =>
+        'Kategoria docelowa ma inny typ (dochód/wydatek) niż usuwana.',
+      '42501' => 'Brak uprawnień.',
+      _ => e.message,
+    };
   }
 }

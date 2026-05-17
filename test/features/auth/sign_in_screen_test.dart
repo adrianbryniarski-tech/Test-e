@@ -11,16 +11,16 @@ void main() {
   }
 
   group('SignInScreen', () {
-    testWidgets('renderuje email field i przycisk', (tester) async {
+    testWidgets('renderuje email + hasło + toggle', (tester) async {
       await tester.pumpWidget(wrap(const SignInScreen()));
       expect(find.text('Nasz budżet domowy'), findsOneWidget);
-      expect(find.byType(TextFormField), findsOneWidget);
-      expect(find.text('Wyślij kod'), findsOneWidget);
+      expect(find.byType(TextFormField), findsNWidgets(2));
+      expect(find.text('Zaloguj się'), findsWidgets);
+      expect(find.text('Załóż konto'), findsOneWidget);
     });
 
-    testWidgets('walidator: pusty email → komunikat błędu', (tester) async {
+    testWidgets('walidator: pusty email → komunikat', (tester) async {
       await tester.pumpWidget(wrap(const SignInScreen()));
-      // Symulujemy submit pustego formularza przez Form.validate().
       final formState = tester.state<FormState>(find.byType(Form));
       expect(formState.validate(), isFalse);
       await tester.pumpAndSettle();
@@ -29,19 +29,22 @@ void main() {
 
     testWidgets('walidator: niepoprawny email → komunikat', (tester) async {
       await tester.pumpWidget(wrap(const SignInScreen()));
-      await tester.enterText(find.byType(TextFormField), 'tojuznie');
+      await tester.enterText(find.byType(TextFormField).first, 'tojuznie');
+      await tester.enterText(find.byType(TextFormField).last, 'sekret');
       final formState = tester.state<FormState>(find.byType(Form));
       expect(formState.validate(), isFalse);
       await tester.pumpAndSettle();
       expect(find.text('Email wygląda na niepoprawny.'), findsOneWidget);
     });
 
-    testWidgets('walidator: poprawny email → brak błędu', (tester) async {
+    testWidgets('walidator: poprawny email + hasło → bez błędu',
+        (tester) async {
       await tester.pumpWidget(wrap(const SignInScreen()));
       await tester.enterText(
-        find.byType(TextFormField),
+        find.byType(TextFormField).first,
         'adrian@example.com',
       );
+      await tester.enterText(find.byType(TextFormField).last, 'sekret123');
       final formState = tester.state<FormState>(find.byType(Form));
       expect(formState.validate(), isTrue);
     });
