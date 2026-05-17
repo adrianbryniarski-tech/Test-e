@@ -5,6 +5,8 @@ import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
+import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
+import 'package:nasz_budzet_domowy/features/household/presentation/invite_partner_sheet.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
@@ -20,6 +22,7 @@ class TransactionsListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final transactions = ref.watch(transactionsProvider);
     final categories = ref.watch(categoriesProvider);
+    final householdId = ref.watch(currentHouseholdIdProvider).value;
 
     return CustomScrollView(
       slivers: [
@@ -30,6 +33,16 @@ class TransactionsListScreen extends ConsumerWidget {
           snap: true,
           actions: [
             const SyncStatusIndicator(),
+            if (householdId != null)
+              IconButton(
+                tooltip: 'Zaproś partnera',
+                icon: const Icon(Icons.person_add_alt),
+                onPressed: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => InvitePartnerSheet(householdId: householdId),
+                ),
+              ),
             IconButton(
               tooltip: 'Wyloguj',
               icon: const Icon(Icons.logout),
