@@ -1,0 +1,20 @@
+{
+  "@@locale": "en",
+  "appTitle": "Our Home Budget",
+  "signIn": "Sign in",
+  "signUp": "Sign up",
+  "createHousehold": "Create household",
+  "enterInvitationCode": "Enter invitation code",
+  "addTransaction": "Add transaction",
+  "categories": "Categories",
+  "balance": "Balance",
+  "thisMonth": "This month",
+  "lastMonth": "Last month",
+  "last3Months": "Last 3 months",
+  "last6Months": "Last 6 months",
+  "last12Months": "Last 12 months",
+  "yearToDate": "Year to date",
+  "lastYear": "Last year",
+  "allTime": "All time",
+  "customRange": "Custom range…"
+}

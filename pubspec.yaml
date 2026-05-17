@@ -1,0 +1,89 @@
+name: nasz_budzet_domowy
+description: "Nasz budżet domowy — aplikacja do zarządzania budżetem domowym dla dwóch osób, z synchronizacją między telefonami, wejściem głosowym po polsku (offline) i importem wyciągów bankowych."
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management — Riverpod 3.0 z offline persistence
+  flutter_riverpod: ^3.0.0
+  riverpod_annotation: ^3.0.0
+  riverpod_sqflite: ^0.1.4
+
+  # Routing
+  go_router: ^14.6.2
+
+  # Supabase
+  supabase_flutter: ^2.8.0
+
+  # Voice input — offline ASR przez Vosk
+  vosk_flutter_2: ^0.3.49
+
+  # Charts
+  fl_chart: ^0.69.0
+
+  # Models / serialization
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # Forms
+  reactive_forms: ^17.0.1
+
+  # Lokalna persistencja
+  sqflite: ^2.4.0
+  shared_preferences: ^2.3.3
+  path_provider: ^2.1.5
+
+  # Sieć / status połączenia
+  connectivity_plus: ^6.1.0
+  http: ^1.2.2
+
+  # i18n / daty
+  intl: ^0.19.0
+  timeago: ^3.7.0
+
+  # Krypto (dedup hash)
+  crypto: ^3.0.6
+
+  # Notyfikacje lokalne (v4, ale w pubspec od początku)
+  flutter_local_notifications: ^18.0.1
+
+  # CSV (v2)
+  csv: ^6.0.0
+  charset_converter: ^2.2.0
+
+  # UI utility
+  cupertino_icons: ^1.0.8
+  collection: ^1.18.0
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+
+  # Lint
+  very_good_analysis: ^7.0.0
+
+  # Code generation
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.9.0
+  riverpod_generator: ^3.0.0
+  custom_lint: ^0.7.0
+  riverpod_lint: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/icons/category_icons.json

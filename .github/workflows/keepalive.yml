@@ -1,0 +1,31 @@
+name: Supabase keep-alive
+
+# Supabase free tier pauzuje projekt po 7 dniach bez API requests.
+# Ten cron pinguje go codziennie aby zapobiec auto-pauzie.
+# Koszt: ~10 s/dzień × 30 ≈ 5 min/mc (z 2000 min/mc free tier).
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # codziennie 06:00 UTC (08:00 PL latem)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Supabase REST
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Curl REST endpoint
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          # Próba SELECT na tabelę publicznie odczytywaną (np. categories systemowych).
+          # Jeśli tabela jest pod RLS bez polityki dla anon — curl wraca 200 z [].
+          # Liczy się sam request, nie zawartość.
+          status=$(curl -sf -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/categories?select=id&limit=1")
+          echo "HTTP $status"
+          [[ "$status" -ge 200 && "$status" -lt 500 ]] || exit 1
