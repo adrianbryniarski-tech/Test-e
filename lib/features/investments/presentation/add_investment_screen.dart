@@ -12,9 +12,22 @@ import 'package:nasz_budzet_domowy/features/investments/data/price_service.dart'
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
 
+/// Waluta wpisywanej ceny zakupu. Krypto często kupowane za USD/EUR —
+/// przeliczamy na PLN po aktualnym kursie średnim NBP.
+enum _BuyCurrency {
+  pln('PLN', 'zł'),
+  usd('USD', r'$'),
+  eur('EUR', '€');
+
+  const _BuyCurrency(this.code, this.symbol);
+
+  final String code;
+  final String symbol;
+}
+
 /// Dodawanie pozycji inwestycyjnej: typ → symbol (krypto = wyszukiwarka) →
-/// ilość → cena zakupu (PLN za jednostkę). Przy krypto podpowiadamy
-/// aktualny kurs jako sugestię ceny.
+/// ilość → cena zakupu. Przy krypto można wpisać cenę w PLN/USD/EUR
+/// (USD/EUR przeliczane na PLN po kursie NBP) i podpowiadamy aktualny kurs.
 class AddInvestmentScreen extends ConsumerStatefulWidget {
   const AddInvestmentScreen({super.key});
 
@@ -36,6 +49,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
   List<CryptoSearchResult> _searchResults = const [];
   bool _searching = false;
   Timer? _debounce;
+
+  // Waluta ceny zakupu (tylko dla krypto). Domyślnie PLN.
+  _BuyCurrency _buyCurrency = _BuyCurrency.pln;
+  // Kurs wybranej waluty do PLN (cache, żeby pokazać podgląd przeliczenia).
+  double? _fxRate;
+  bool _fetchingFx = false;
 
   bool _saving = false;
   String? _error;
@@ -79,6 +98,24 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
     if (price != null && _priceController.text.trim().isEmpty) {
       _priceController.text = price.toStringAsFixed(2);
     }
+  }
+
+  Future<void> _onCurrencyChanged(_BuyCurrency c) async {
+    if (c == _buyCurrency) return;
+    setState(() {
+      _buyCurrency = c;
+      _fxRate = c == _BuyCurrency.pln ? 1 : null;
+      // Wyczyść pole — sugerowany kurs był w innej walucie.
+      _priceController.clear();
+    });
+    if (c == _BuyCurrency.pln) return;
+    setState(() => _fetchingFx = true);
+    final rate = await ref.read(priceServiceProvider).fxToPln(c.code);
+    if (!mounted) return;
+    setState(() {
+      _fxRate = rate;
+      _fetchingFx = false;
+    });
   }
 
   double? _parseNum(String raw) {
@@ -127,6 +164,23 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
       _error = null;
     });
 
+    // Krypto kupione za USD/EUR → przelicz na PLN po aktualnym kursie NBP.
+    var pricePln = price;
+    if (_type == AssetType.crypto && _buyCurrency != _BuyCurrency.pln) {
+      final rate = _fxRate ??
+          await ref.read(priceServiceProvider).fxToPln(_buyCurrency.code);
+      if (!mounted) return;
+      if (rate == null) {
+        setState(() {
+          _saving = false;
+          _error = 'Nie udało się pobrać kursu ${_buyCurrency.code}/PLN. '
+              'Spróbuj ponownie lub wpisz cenę w PLN.';
+        });
+        return;
+      }
+      pricePln = price * rate;
+    }
+
     final inv = Investment(
       id: '',
       householdId: householdId,
@@ -134,7 +188,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
       symbol: symbol,
       displayName: displayName,
       quantity: qty,
-      buyPriceCents: (price * 100).round(),
+      buyPriceCents: (pricePln * 100).round(),
       createdAt: DateTime.now(),
     );
     final result = await ref.read(investmentRepositoryProvider).insert(inv);
@@ -193,6 +247,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
                   _selectedCrypto = null;
                   _searchController.clear();
                   _searchResults = const [];
+                  // Metale wyceniamy w PLN — reset waluty.
+                  _buyCurrency = _BuyCurrency.pln;
+                  _fxRate = 1;
                 }),
               ),
               const SizedBox(height: 20),
@@ -277,11 +334,23 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
 
               Text(
                 isCrypto
-                    ? 'Cena zakupu (PLN za 1 $unitLabel)'
+                    ? 'Cena zakupu (za 1 $unitLabel)'
                     : 'Cena zakupu (PLN za 1 gram)',
                 style: theme.textTheme.labelLarge,
               ),
               const SizedBox(height: 8),
+              if (isCrypto) ...[
+                SegmentedButton<_BuyCurrency>(
+                  segments: const [
+                    ButtonSegment(value: _BuyCurrency.pln, label: Text('PLN')),
+                    ButtonSegment(value: _BuyCurrency.usd, label: Text('USD')),
+                    ButtonSegment(value: _BuyCurrency.eur, label: Text('EUR')),
+                  ],
+                  selected: {_buyCurrency},
+                  onSelectionChanged: (s) => _onCurrencyChanged(s.first),
+                ),
+                const SizedBox(height: 8),
+              ],
               TextFormField(
                 controller: _priceController,
                 keyboardType:
@@ -289,13 +358,32 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp('[0-9.,]')),
                 ],
-                decoration: const InputDecoration(
-                  hintText: 'np. 280000',
-                  suffixText: 'zł',
+                onChanged: (_) {
+                  // Odśwież podgląd przeliczenia przy zmianie kwoty.
+                  if (isCrypto && _buyCurrency != _BuyCurrency.pln) {
+                    setState(() {});
+                  }
+                },
+                decoration: InputDecoration(
+                  hintText: isCrypto
+                      ? (_buyCurrency == _BuyCurrency.pln
+                          ? 'np. 280000'
+                          : 'np. 65000')
+                      : 'np. 280',
+                  suffixText: isCrypto ? _buyCurrency.symbol : 'zł',
                 ),
                 validator: (v) =>
                     _parseNum(v ?? '') == null ? 'Wpisz cenę' : null,
               ),
+              if (isCrypto && _buyCurrency != _BuyCurrency.pln) ...[
+                const SizedBox(height: 6),
+                _ConversionHint(
+                  amount: _parseNum(_priceController.text),
+                  currency: _buyCurrency,
+                  fxRate: _fxRate,
+                  loading: _fetchingFx,
+                ),
+              ],
               const SizedBox(height: 24),
 
               if (_error != null) ...[
@@ -312,6 +400,51 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Podgląd przeliczenia ceny na PLN po kursie NBP (krypto w USD/EUR).
+class _ConversionHint extends StatelessWidget {
+  const _ConversionHint({
+    required this.amount,
+    required this.currency,
+    required this.fxRate,
+    required this.loading,
+  });
+
+  final double? amount;
+  final _BuyCurrency currency;
+  final double? fxRate;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+
+    if (loading) {
+      return Text('Pobieram kurs ${currency.code}/PLN…', style: style);
+    }
+    if (fxRate == null) {
+      return Text(
+        'Kurs ${currency.code}/PLN niedostępny — przeliczę przy zapisie.',
+        style: style,
+      );
+    }
+    final rateText = fxRate!.toStringAsFixed(4);
+    if (amount == null) {
+      return Text(
+        'Kurs NBP: 1 ${currency.code} = $rateText zł',
+        style: style,
+      );
+    }
+    final pln = (amount! * fxRate!).toStringAsFixed(2);
+    return Text(
+      '≈ $pln zł (kurs NBP 1 ${currency.code} = $rateText zł)',
+      style: style,
     );
   }
 }

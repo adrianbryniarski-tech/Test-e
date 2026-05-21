@@ -130,9 +130,15 @@ class PriceService {
   }
 
   /// NBP — kurs średni USD/PLN (ile PLN za 1 USD).
-  Future<double?> _fetchUsdPln() async {
+  Future<double?> _fetchUsdPln() => fxToPln('USD');
+
+  /// Kurs średni waluty do PLN (ile PLN za 1 jednostkę waluty), tabela A NBP.
+  /// Obsługuje m.in. 'USD', 'EUR'. 'PLN' → 1.0 (bez requestu).
+  Future<double?> fxToPln(String currencyCode) async {
+    final code = currencyCode.trim().toLowerCase();
+    if (code == 'pln') return 1;
     try {
-      final uri = Uri.https('api.nbp.pl', '/api/exchangerates/rates/a/usd');
+      final uri = Uri.https('api.nbp.pl', '/api/exchangerates/rates/a/$code');
       final resp = await _client.get(uri).timeout(_timeout);
       if (resp.statusCode != 200) return null;
       final json = jsonDecode(resp.body) as Map<String, dynamic>;
