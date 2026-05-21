@@ -76,19 +76,5 @@ final investmentValuationsProvider =
   return out;
 });
 
-/// Łączna wartość portfela teraz + łączny zysk/strata.
-final portfolioTotalsProvider = Provider<({double value, double profit})>((
-  ref,
-) {
-  final valuations = ref.watch(investmentValuationsProvider);
-  var value = 0.0;
-  var buy = 0.0;
-  for (final v in valuations) {
-    value += v.currentValuePln;
-    buy += v.investment.buyValuePln;
-  }
-  return (value: value, profit: value - buy);
-});
-
 String _metalKey(Investment inv) =>
     inv.assetType == AssetType.gold ? 'XAU' : 'XAG';

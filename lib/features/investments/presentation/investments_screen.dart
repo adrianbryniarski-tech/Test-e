@@ -34,7 +34,6 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
   Widget build(BuildContext context) {
     final investments = ref.watch(investmentsProvider);
     final valuations = ref.watch(investmentValuationsProvider);
-    final totals = ref.watch(portfolioTotalsProvider);
     final snapshots = ref.watch(portfolioSnapshotsProvider).value ?? const [];
     final pricesAsync = ref.watch(pricesProvider);
     final theme = Theme.of(context);
@@ -50,6 +49,16 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
     final visibleValuations = valuations
         .where((v) => !_locallyDeleted.contains(v.investment.id))
         .toList();
+
+    // Sumy liczone z WIDOCZNYCH pozycji — dzięki temu nagłówek aktualizuje
+    // się natychmiast po swipe-delete, nie czekając na event z Realtime.
+    var portfolioValue = 0.0;
+    var portfolioBuy = 0.0;
+    for (final v in visibleValuations) {
+      portfolioValue += v.currentValuePln;
+      portfolioBuy += v.investment.buyValuePln;
+    }
+    final portfolioProfit = portfolioValue - portfolioBuy;
 
     return CustomScrollView(
       slivers: [
@@ -90,7 +99,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
             child: Center(child: InlineError(message: e.toString())),
           ),
           data: (items) {
-            if (items.isEmpty) {
+            if (visibleValuations.isEmpty) {
               return const SliverFillRemaining(child: _EmptyState());
             }
             return SliverList(
@@ -115,7 +124,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
                             child: Text(
-                              fmt.format(totals.value),
+                              fmt.format(portfolioValue),
                               style: theme.textTheme.displaySmall?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -123,8 +132,8 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                           ),
                           const SizedBox(height: 4),
                           _ProfitLabel(
-                            profit: totals.profit,
-                            base: totals.value - totals.profit,
+                            profit: portfolioProfit,
+                            base: portfolioBuy,
                           ),
                           const SizedBox(height: 16),
                           PortfolioChart(snapshots: snapshots),
