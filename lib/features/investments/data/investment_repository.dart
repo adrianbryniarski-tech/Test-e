@@ -40,6 +40,22 @@ class InvestmentRepository {
     }
   }
 
+  Future<InvestmentWriteResult> update({
+    required String id,
+    required double quantity,
+    required int buyPriceCents,
+  }) async {
+    try {
+      await supabase.from('investments').update({
+        'quantity': quantity,
+        'buy_price_cents': buyPriceCents,
+      }).eq('id', id);
+      return const InvestmentWriteSuccess();
+    } on PostgrestException catch (e) {
+      return InvestmentWriteFailure('${e.code ?? "?"} ${e.message}');
+    }
+  }
+
   Future<InvestmentWriteResult> delete(String id) async {
     try {
       await supabase.from('investments').delete().eq('id', id);
