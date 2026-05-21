@@ -24,16 +24,19 @@ class BrandWatermark extends StatelessWidget {
       child: IgnorePointer(
         child: Opacity(
           opacity: 0.4,
-          child: Row(
+          // Układ pionowy: logo NAD tekstem (jak zaakceptowany szkic).
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(asset, width: 34, height: 34),
-              const SizedBox(width: 8),
+              // PNG przycięty tuż pod kropkami (brak dolnego paddingu),
+              // więc logo siedzi zaraz nad napisem.
+              Image.asset(asset, width: 44),
+              const SizedBox(height: 1),
               Text(
-                'AB Corporation',
+                'made by AB Corporation',
                 style: TextStyle(
                   color: textColor,
-                  fontSize: 12,
+                  fontSize: 11,
                   letterSpacing: 0.5,
                   fontWeight: FontWeight.w500,
                 ),
