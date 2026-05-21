@@ -12,11 +12,26 @@ import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 
 /// Zakładka Inwestycje: wartość portfela + wykres + lista pozycji
 /// z zyskiem/stratą. Kursy z CoinGecko/NBP/stooq (pull-to-refresh).
-class InvestmentsScreen extends ConsumerWidget {
+///
+/// Trzyma `_locallyDeleted` set — po swipe-delete optimistycznie ukrywamy
+/// pozycję zanim Realtime przyniesie DELETE event. Bez tego Dismissible
+/// rzuca "A dismissed Dismissible widget is still part of the tree".
+class InvestmentsScreen extends ConsumerStatefulWidget {
   const InvestmentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InvestmentsScreen> createState() => _InvestmentsScreenState();
+}
+
+class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
+  final Set<String> _locallyDeleted = {};
+
+  void _hideLocally(String id) => setState(() => _locallyDeleted.add(id));
+  void _restoreLocally(String id) =>
+      setState(() => _locallyDeleted.remove(id));
+
+  @override
+  Widget build(BuildContext context) {
     final investments = ref.watch(investmentsProvider);
     final valuations = ref.watch(investmentValuationsProvider);
     final totals = ref.watch(portfolioTotalsProvider);
@@ -28,6 +43,13 @@ class InvestmentsScreen extends ConsumerWidget {
       symbol: 'zł',
       decimalDigits: 2,
     );
+
+    // Self-cleanup: gdy Realtime usunie pozycję, czyścimy ją z setu.
+    final visibleIds = valuations.map((v) => v.investment.id).toSet();
+    _locallyDeleted.removeWhere((id) => !visibleIds.contains(id));
+    final visibleValuations = valuations
+        .where((v) => !_locallyDeleted.contains(v.investment.id))
+        .toList();
 
     return CustomScrollView(
       slivers: [
@@ -120,7 +142,13 @@ class InvestmentsScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                for (final v in valuations) _ValuationTile(valuation: v),
+                for (final v in visibleValuations)
+                  _DismissibleValuationRow(
+                    key: ValueKey('inv-${v.investment.id}'),
+                    valuation: v,
+                    onDeleteLocally: _hideLocally,
+                    onDeleteFailed: _restoreLocally,
+                  ),
                 const SizedBox(height: 96),
               ]),
             );
@@ -162,6 +190,99 @@ class _ProfitLabel extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Wrapper z Dismissible — swipe w lewo → potwierdzenie → usunięcie.
+///
+/// CRITICAL: po `onDismissed` widget MUSI natychmiast zniknąć z drzewa
+/// (parent filtruje go w tym samym build przez `_locallyDeleted`). Inaczej
+/// Flutter rzuca "A dismissed Dismissible widget is still part of the tree".
+class _DismissibleValuationRow extends ConsumerWidget {
+  const _DismissibleValuationRow({
+    required this.valuation,
+    required this.onDeleteLocally,
+    required this.onDeleteFailed,
+    super.key,
+  });
+
+  final InvestmentValuation valuation;
+  final void Function(String id) onDeleteLocally;
+  final void Function(String id) onDeleteFailed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final inv = valuation.investment;
+    return Dismissible(
+      key: ValueKey('inv-dismiss-${inv.id}'),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => _confirmDeleteInvestment(context, inv.displayName),
+      onDismissed: (_) async {
+        // KROK 1 (SYNC): ukryj item w parent — Dismissible może zniknąć.
+        onDeleteLocally(inv.id);
+        final messenger = ScaffoldMessenger.of(context);
+        // KROK 2 (ASYNC): faktyczne usunięcie; Realtime odświeży listę.
+        final result =
+            await ref.read(investmentRepositoryProvider).delete(inv.id);
+        if (result is InvestmentWriteSuccess) {
+          ref.invalidate(pricesProvider);
+          messenger.showSnackBar(
+            SnackBar(content: Text('Usunięto „${inv.displayName}"')),
+          );
+        } else if (result is InvestmentWriteFailure) {
+          onDeleteFailed(inv.id);
+          messenger.showSnackBar(
+            SnackBar(content: Text('Nie udało się usunąć: ${result.message}')),
+          );
+        }
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.errorContainer,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          Icons.delete_outline,
+          color: theme.colorScheme.onErrorContainer,
+        ),
+      ),
+      child: _ValuationTile(valuation: valuation),
+    );
+  }
+}
+
+/// Wspólny dialog potwierdzenia usunięcia pozycji.
+Future<bool> _confirmDeleteInvestment(
+  BuildContext context,
+  String displayName,
+) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (dialogCtx) => AlertDialog(
+      title: const Text('Usunąć pozycję?'),
+      content: Text(
+        'Usunąć „$displayName" z portfela? Tej operacji nie można cofnąć.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogCtx).pop(false),
+          child: const Text('Anuluj'),
+        ),
+        FilledButton.tonal(
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(dialogCtx).colorScheme.errorContainer,
+            foregroundColor: Theme.of(dialogCtx).colorScheme.onErrorContainer,
+          ),
+          onPressed: () => Navigator.of(dialogCtx).pop(true),
+          child: const Text('Usuń'),
+        ),
+      ],
+    ),
+  );
+  return ok ?? false;
 }
 
 class _ValuationTile extends ConsumerWidget {
@@ -206,27 +327,8 @@ class _ValuationTile extends ConsumerWidget {
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final inv = valuation.investment;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Usunąć pozycję?'),
-        content: Text(
-          'Usunąć „${inv.displayName}" z portfela? Tej operacji nie '
-          'można cofnąć.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: const Text('Anuluj'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: const Text('Usuń'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !context.mounted) return;
+    final ok = await _confirmDeleteInvestment(context, inv.displayName);
+    if (!ok || !context.mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
     final result = await ref.read(investmentRepositoryProvider).delete(inv.id);
