@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/application/dashboard_providers.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/balance_tile.dart';
@@ -8,10 +10,15 @@ import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/categ
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/date_range_bar.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/income_expense_bar_tile.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/running_balance_tile.dart';
+import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
+import 'package:nasz_budzet_domowy/features/household/presentation/invite_partner_sheet.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/sync_status_indicator.dart';
 
 /// Ekran główny — bento grid z podsumowaniem finansów.
+/// Trzyma globalny panel kontroli (sync status, odśwież, zaproś
+/// partnera, ustawienia, wyloguj) — bo to pierwszy/centralny ekran.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -19,6 +26,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(dashboardSummaryProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
+    final householdId = ref.watch(currentHouseholdIdProvider).value;
 
     return CustomScrollView(
       slivers: [
@@ -28,6 +36,7 @@ class DashboardScreen extends ConsumerWidget {
           floating: true,
           snap: true,
           actions: [
+            const SyncStatusIndicator(),
             IconButton(
               tooltip: 'Odśwież',
               icon: const Icon(Icons.refresh),
@@ -42,6 +51,44 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 );
               },
+            ),
+            if (householdId != null)
+              IconButton(
+                tooltip: 'Zaproś partnera',
+                icon: const Icon(Icons.person_add_alt),
+                onPressed: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => InvitePartnerSheet(householdId: householdId),
+                ),
+              ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (v) async {
+                if (v == 'settings') {
+                  await context.push<void>('/settings');
+                } else if (v == 'logout') {
+                  await ref.read(authRepositoryProvider).signOut();
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'settings',
+                  child: ListTile(
+                    leading: Icon(Icons.settings_outlined),
+                    title: Text('Ustawienia'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'logout',
+                  child: ListTile(
+                    leading: Icon(Icons.logout),
+                    title: Text('Wyloguj'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
           ],
           bottom: const PreferredSize(
