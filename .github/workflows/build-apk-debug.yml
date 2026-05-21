@@ -4,11 +4,25 @@ name: Build debug APK
 # debug signing). Wystarczy do zainstalowania na telefonie i testów
 # end-to-end zanim wygenerujesz keystore dla release.
 #
-# Trigger: tylko workflow_dispatch (manualnie z GitHub UI),
-# żeby nie palić minut CI na każdym push.
+# Trigger: workflow_dispatch (manualnie) ORAZ automatycznie po każdym
+# push do main który zmienia kod apki. Dzięki temu po każdym merge
+# APK buduje się sam — wystarczy pobrać artefakt z Actions.
 
 on:
+  # Manualny trigger z UI (dalej dostępny).
   workflow_dispatch:
+  # Auto-build przy push do main, ALE tylko gdy zmienił się kod apki —
+  # pomijamy zmiany dotyczące wyłącznie dokumentacji / skilli / migracji
+  # SQL (nie wpływają na APK), żeby nie palić minut CI.
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'android/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/build-apk-debug.yml'
 
 jobs:
   build:
