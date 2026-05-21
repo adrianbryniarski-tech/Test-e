@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/investments/application/investment_providers.dart';
 import 'package:nasz_budzet_domowy/features/investments/data/investment.dart';
+import 'package:nasz_budzet_domowy/features/investments/data/investment_repository.dart';
 import 'package:nasz_budzet_domowy/features/investments/presentation/widgets/portfolio_chart.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 
@@ -162,12 +164,86 @@ class _ProfitLabel extends StatelessWidget {
   }
 }
 
-class _ValuationTile extends StatelessWidget {
+class _ValuationTile extends ConsumerWidget {
   const _ValuationTile({required this.valuation});
   final InvestmentValuation valuation;
 
+  Future<void> _showActions(BuildContext context, WidgetRef ref) async {
+    final inv = valuation.investment;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Edytuj pozycję'),
+              onTap: () {
+                Navigator.of(sheetCtx).pop();
+                context.push('/investments/edit', extra: inv);
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.delete_outline,
+                color: Theme.of(sheetCtx).colorScheme.error,
+              ),
+              title: Text(
+                'Usuń pozycję',
+                style: TextStyle(color: Theme.of(sheetCtx).colorScheme.error),
+              ),
+              onTap: () {
+                Navigator.of(sheetCtx).pop();
+                _confirmDelete(context, ref);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final inv = valuation.investment;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Usunąć pozycję?'),
+        content: Text(
+          'Usunąć „${inv.displayName}" z portfela? Tej operacji nie '
+          'można cofnąć.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('Usuń'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await ref.read(investmentRepositoryProvider).delete(inv.id);
+    if (result is InvestmentWriteSuccess) {
+      ref.invalidate(pricesProvider);
+      messenger.showSnackBar(
+        SnackBar(content: Text('Usunięto „${inv.displayName}"')),
+      );
+    } else if (result is InvestmentWriteFailure) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Nie udało się usunąć: ${result.message}')),
+      );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final inv = valuation.investment;
     final fmt = NumberFormat.currency(
@@ -184,7 +260,10 @@ class _ValuationTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Card(
-        child: Padding(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _showActions(context, ref),
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
@@ -238,6 +317,7 @@ class _ValuationTile extends StatelessWidget {
                 ],
               ),
             ],
+          ),
           ),
         ),
       ),

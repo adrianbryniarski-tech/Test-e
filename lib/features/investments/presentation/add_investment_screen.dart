@@ -25,11 +25,15 @@ enum _BuyCurrency {
   final String symbol;
 }
 
-/// Dodawanie pozycji inwestycyjnej: typ → symbol (krypto = wyszukiwarka) →
-/// ilość → cena zakupu. Przy krypto można wpisać cenę w PLN/USD/EUR
-/// (USD/EUR przeliczane na PLN po kursie NBP) i podpowiadamy aktualny kurs.
+/// Dodawanie / edycja pozycji inwestycyjnej: typ → symbol (krypto =
+/// wyszukiwarka) → ilość → cena zakupu. Przy krypto można wpisać cenę w
+/// PLN/USD/EUR (USD/EUR przeliczane na PLN po kursie NBP) i podpowiadamy
+/// aktualny kurs. Gdy [existing] != null — tryb edycji (typ i aktywo
+/// zablokowane, edytujemy ilość i cenę).
 class AddInvestmentScreen extends ConsumerStatefulWidget {
-  const AddInvestmentScreen({super.key});
+  const AddInvestmentScreen({super.key, this.existing});
+
+  final Investment? existing;
 
   @override
   ConsumerState<AddInvestmentScreen> createState() =>
@@ -43,6 +47,21 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
   final _searchController = TextEditingController();
 
   AssetType _type = AssetType.crypto;
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    if (e != null) {
+      _type = e.assetType;
+      _quantityController.text = e.quantity == e.quantity.roundToDouble()
+          ? e.quantity.toStringAsFixed(0)
+          : e.quantity.toString();
+      _priceController.text = (e.buyPriceCents / 100).toStringAsFixed(2);
+    }
+  }
 
   // Dla krypto: wybrany coin z wyszukiwarki.
   CryptoSearchResult? _selectedCrypto;
@@ -130,7 +149,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
 
     final String symbol;
     final String displayName;
-    if (_type == AssetType.crypto) {
+    final existing = widget.existing;
+    if (existing != null) {
+      symbol = existing.symbol;
+      displayName = existing.displayName;
+    } else if (_type == AssetType.crypto) {
       if (_selectedCrypto == null) {
         setState(() => _error = 'Wybierz kryptowalutę z listy.');
         return;
@@ -181,17 +204,29 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
       pricePln = price * rate;
     }
 
-    final inv = Investment(
-      id: '',
-      householdId: householdId,
-      assetType: _type,
-      symbol: symbol,
-      displayName: displayName,
-      quantity: qty,
-      buyPriceCents: (pricePln * 100).round(),
-      createdAt: DateTime.now(),
-    );
-    final result = await ref.read(investmentRepositoryProvider).insert(inv);
+    final repo = ref.read(investmentRepositoryProvider);
+    final buyPriceCents = (pricePln * 100).round();
+    final InvestmentWriteResult result;
+    if (existing != null) {
+      result = await repo.update(
+        id: existing.id,
+        quantity: qty,
+        buyPriceCents: buyPriceCents,
+      );
+    } else {
+      result = await repo.insert(
+        Investment(
+          id: '',
+          householdId: householdId,
+          assetType: _type,
+          symbol: symbol,
+          displayName: displayName,
+          quantity: qty,
+          buyPriceCents: buyPriceCents,
+          createdAt: DateTime.now(),
+        ),
+      );
+    }
     if (!mounted) return;
     switch (result) {
       case InvestmentWriteSuccess():
@@ -209,53 +244,89 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isCrypto = _type == AssetType.crypto;
+    final existing = widget.existing;
     final unitLabel = isCrypto
-        ? (_selectedCrypto?.symbol ?? 'szt.')
+        ? (_selectedCrypto?.symbol ??
+            (existing != null
+                ? _type.unitLabel(existing.symbol)
+                : 'szt.'))
         : 'gram';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dodaj inwestycję')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Edytuj pozycję' : 'Dodaj inwestycję'),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             children: [
-              Text('Typ aktywa', style: theme.textTheme.labelLarge),
-              const SizedBox(height: 8),
-              SegmentedButton<AssetType>(
-                segments: const [
-                  ButtonSegment(
-                    value: AssetType.crypto,
-                    label: Text('Krypto'),
-                    icon: Icon(Icons.currency_bitcoin),
+              // Tryb edycji: typ i aktywo są stałe — pokazujemy je tylko
+              // jako podgląd, nie do zmiany.
+              if (_isEditing) ...[
+                Card(
+                  child: ListTile(
+                    leading: Icon(
+                      switch (_type) {
+                        AssetType.crypto => Icons.currency_bitcoin,
+                        AssetType.gold => Icons.circle,
+                        AssetType.silver => Icons.circle,
+                      },
+                      color: switch (_type) {
+                        AssetType.crypto => theme.colorScheme.primary,
+                        AssetType.gold => const Color(0xFFE8C24A),
+                        AssetType.silver => const Color(0xFFB0B7C3),
+                      },
+                    ),
+                    title: Text(existing!.displayName),
+                    subtitle: Text(
+                      switch (_type) {
+                        AssetType.crypto => 'Kryptowaluta',
+                        AssetType.gold => 'Złoto',
+                        AssetType.silver => 'Srebro',
+                      },
+                    ),
                   ),
-                  ButtonSegment(
-                    value: AssetType.gold,
-                    label: Text('Złoto'),
-                    icon: Icon(Icons.circle, color: Color(0xFFE8C24A)),
-                  ),
-                  ButtonSegment(
-                    value: AssetType.silver,
-                    label: Text('Srebro'),
-                    icon: Icon(Icons.circle, color: Color(0xFFB0B7C3)),
-                  ),
-                ],
-                selected: {_type},
-                onSelectionChanged: (s) => setState(() {
-                  _type = s.first;
-                  _selectedCrypto = null;
-                  _searchController.clear();
-                  _searchResults = const [];
-                  // Metale wyceniamy w PLN — reset waluty.
-                  _buyCurrency = _BuyCurrency.pln;
-                  _fxRate = 1;
-                }),
-              ),
-              const SizedBox(height: 20),
+                ),
+                const SizedBox(height: 20),
+              ] else ...[
+                Text('Typ aktywa', style: theme.textTheme.labelLarge),
+                const SizedBox(height: 8),
+                SegmentedButton<AssetType>(
+                  segments: const [
+                    ButtonSegment(
+                      value: AssetType.crypto,
+                      label: Text('Krypto'),
+                      icon: Icon(Icons.currency_bitcoin),
+                    ),
+                    ButtonSegment(
+                      value: AssetType.gold,
+                      label: Text('Złoto'),
+                      icon: Icon(Icons.circle, color: Color(0xFFE8C24A)),
+                    ),
+                    ButtonSegment(
+                      value: AssetType.silver,
+                      label: Text('Srebro'),
+                      icon: Icon(Icons.circle, color: Color(0xFFB0B7C3)),
+                    ),
+                  ],
+                  selected: {_type},
+                  onSelectionChanged: (s) => setState(() {
+                    _type = s.first;
+                    _selectedCrypto = null;
+                    _searchController.clear();
+                    _searchResults = const [];
+                    // Metale wyceniamy w PLN — reset waluty.
+                    _buyCurrency = _BuyCurrency.pln;
+                    _fxRate = 1;
+                  }),
+                ),
+                const SizedBox(height: 20),
+              ],
 
-              // Krypto: wyszukiwarka. Metale: nazwa stała.
-              if (isCrypto) ...[
+              // Krypto (tylko przy dodawaniu): wyszukiwarka.
+              if (isCrypto && !_isEditing) ...[
                 Text('Kryptowaluta', style: theme.textTheme.labelLarge),
                 const SizedBox(height: 8),
                 TextField(
