@@ -83,5 +83,5 @@ flutter:
   uses-material-design: true
   generate: true
   assets:
-    - assets/icons/category_icons.json
+    - assets/icons/
     - assets/sounds/

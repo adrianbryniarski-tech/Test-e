@@ -4,6 +4,7 @@ import 'package:nasz_budzet_domowy/features/budgets/presentation/budgets_screen.
 import 'package:nasz_budzet_domowy/features/categories/presentation/categories_screen.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:nasz_budzet_domowy/features/transactions/presentation/transactions_list_screen.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/brand_watermark.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/glowing_button.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/neon_gradient_background.dart';
 
@@ -31,9 +32,16 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: NeonGradientBackground(
-        child: IndexedStack(
-          index: _index,
-          children: _screens,
+        child: Stack(
+          children: [
+            IndexedStack(
+              index: _index,
+              children: _screens,
+            ),
+            // Znak wodny przyklejony w lewym dolnym — pokrywa wszystkie
+            // 4 zakładki, nie scrolluje z treścią.
+            const BrandWatermark(),
+          ],
         ),
       ),
       bottomNavigationBar: NavigationBar(
