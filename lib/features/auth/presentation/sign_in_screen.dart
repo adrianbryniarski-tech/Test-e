@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 import 'package:nasz_budzet_domowy/features/auth/data/auth_repository.dart';
+import 'package:nasz_budzet_domowy/features/onboarding/application/intro_providers.dart';
+import 'package:nasz_budzet_domowy/features/onboarding/presentation/intro_carousel.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
 
@@ -73,6 +75,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Przy pierwszym uruchomieniu (przed logowaniem) pokazujemy intro
+    // carousel zamiast formularza. Po obejrzeniu → markIntroSeen → formularz.
+    final introSeen = ref.watch(introSeenProvider);
+    if (introSeen.value == false) {
+      return IntroCarousel(
+        onFinish: () => markIntroSeen(ref),
+      );
+    }
+
     final theme = Theme.of(context);
     final isSignIn = _mode == _Mode.signIn;
     return Scaffold(

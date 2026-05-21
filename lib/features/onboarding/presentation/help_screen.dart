@@ -1,0 +1,189 @@
+// Multi-line stringi w listach `steps` są intencjonalne (długi tekst
+// instrukcji łamany dla limitu 80 znaków) — wyłączamy regułę adjacent
+// strings dla tego pliku.
+// ignore_for_file: no_adjacent_strings_in_list
+
+import 'package:flutter/material.dart';
+
+/// Statyczny ekran pomocy — instrukcje krok-po-kroku. Dostępny zawsze
+/// z Ustawień. Cel: żeby właściciel apki nie musiał każdej nowej osobie
+/// tłumaczyć "jak połączyć z partnerem" itd.
+class HelpScreen extends StatelessWidget {
+  const HelpScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Pomoc')),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        children: const [
+          _HelpSection(
+            emoji: '🤝',
+            title: 'Jak połączyć się z partnerem/ką',
+            steps: [
+              'TY (pierwsza osoba): na ekranie startowym wybierz '
+                  '„Stwórz nowe gospodarstwo", nadaj nazwę.',
+              'Dostaniesz 6-znakowy kod (np. ABC-XYZ). Skopiuj go.',
+              'Wyślij kod partnerowi (SMS, Telegram, cokolwiek).',
+              'PARTNER: instaluje tę samą apkę, zakłada konto na swój '
+                  'email + hasło.',
+              'Na ekranie startowym wybiera „Mam kod zaproszenia", '
+                  'wpisuje Twój kod → „Dołącz".',
+              'Gotowe — od teraz widzicie te same transakcje na obu '
+                  'telefonach, na żywo.',
+            ],
+          ),
+          _HelpSection(
+            emoji: '🔑',
+            title: 'Gdzie znaleźć kod zaproszenia później',
+            steps: [
+              'Zakładka „Transakcje" (dolny pasek).',
+              'Ikona 👤+ w prawym górnym rogu.',
+              'Pokaże aktualny kod + przycisk „Kopiuj". Możesz też '
+                  'wygenerować nowy.',
+            ],
+          ),
+          _HelpSection(
+            emoji: '➕',
+            title: 'Jak dodać wydatek / dochód',
+            steps: [
+              'Stuknij duży przycisk + (prawy dolny róg).',
+              'Wybierz Wydatek lub Dochód.',
+              'Wpisz kwotę, wybierz kategorię, datę (domyślnie dziś).',
+              'Opcjonalnie dodaj opis. Stuknij „Zapisz".',
+            ],
+          ),
+          _HelpSection(
+            emoji: '🎤',
+            title: 'Jak dodać głosem',
+            steps: [
+              'Na ekranie dodawania transakcji stuknij ikonę mikrofonu '
+                  '(prawy górny róg).',
+              'Za pierwszym razem apka pobierze model głosu (~50 MB) — '
+                  'jednorazowo.',
+              'Przytrzymaj i powiedz np. „pięćdziesiąt złotych Biedronka '
+                  'wczoraj".',
+              'Apka sama wypełni kwotę, kategorię i datę — sprawdź '
+                  'i zapisz.',
+            ],
+          ),
+          _HelpSection(
+            emoji: '🗑️',
+            title: 'Jak usunąć pomyłkę',
+            steps: [
+              'Na liście transakcji przesuń wpis palcem w lewo.',
+              'Potwierdź w okienku „Usuń".',
+            ],
+          ),
+          _HelpSection(
+            emoji: '🎯',
+            title: 'Jak ustawić budżet miesięczny',
+            steps: [
+              'Zakładka „Budżety" (dolny pasek).',
+              'Ikona + → wybierz kategorię wydatków, wpisz kwotę.',
+              'Pasek pokaże ile już wydaliście: zielony / żółty / '
+                  'czerwony (przekroczone).',
+            ],
+          ),
+          _HelpSection(
+            emoji: '🎨',
+            title: 'Jak zmienić wygląd i animacje',
+            steps: [
+              'Zakładka „Transakcje" → ⋮ (3 kropki) → „Ustawienia".',
+              'Wybierz jeden z 8 motywów + tryb jasny/ciemny.',
+              'Niżej — włącz/wyłącz pojedyncze animacje i dźwięki.',
+            ],
+          ),
+          _HelpSection(
+            emoji: '🔄',
+            title: 'Coś się nie odświeża?',
+            steps: [
+              'Pociągnij listę palcem od góry w dół (pull-to-refresh).',
+              'Albo stuknij ikonę 🔄 w pasku u góry.',
+              'Dane synchronizują się automatycznie gdy jest internet.',
+            ],
+          ),
+          SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _HelpSection extends StatelessWidget {
+  const _HelpSection({
+    required this.emoji,
+    required this.title,
+    required this.steps,
+  });
+
+  final String emoji;
+  final String title;
+  final List<String> steps;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 24)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            for (var i = 0; i < steps.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${i + 1}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        steps[i],
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

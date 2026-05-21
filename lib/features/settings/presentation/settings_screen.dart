@@ -154,6 +154,19 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Card(
+            child: ListTile(
+              leading: const Icon(Icons.help_outline),
+              title: const Text('Pomoc — jak to działa'),
+              subtitle: const Text(
+                'Instrukcja krok po kroku: łączenie z partnerem, '
+                'voice, budżety…',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/help'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(

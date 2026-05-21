@@ -68,6 +68,14 @@ class OnboardingChoiceScreen extends ConsumerWidget {
                     'żeby się dołączyć.',
                 onTap: () => context.push('/onboarding/join'),
               ),
+              const Spacer(),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => context.push('/help'),
+                  icon: const Icon(Icons.help_outline),
+                  label: const Text('Nie wiesz co wybrać? Zobacz pomoc'),
+                ),
+              ),
             ],
           ),
         ),
