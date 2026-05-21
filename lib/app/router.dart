@@ -11,6 +11,7 @@ import 'package:nasz_budzet_domowy/features/household/presentation/create_househ
 import 'package:nasz_budzet_domowy/features/household/presentation/invitation_share_screen.dart';
 import 'package:nasz_budzet_domowy/features/household/presentation/join_household_screen.dart';
 import 'package:nasz_budzet_domowy/features/household/presentation/onboarding_choice_screen.dart';
+import 'package:nasz_budzet_domowy/features/investments/presentation/add_investment_screen.dart';
 import 'package:nasz_budzet_domowy/features/onboarding/presentation/help_screen.dart';
 import 'package:nasz_budzet_domowy/features/settings/presentation/settings_screen.dart';
 import 'package:nasz_budzet_domowy/features/transactions/presentation/add_transaction_screen.dart';
@@ -109,6 +110,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/transactions/add',
         builder: (context, state) => const AddTransactionScreen(),
+      ),
+      GoRoute(
+        path: '/investments/add',
+        builder: (context, state) => const AddInvestmentScreen(),
       ),
       GoRoute(
         path: '/settings',
