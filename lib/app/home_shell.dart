@@ -3,14 +3,16 @@ import 'package:go_router/go_router.dart';
 import 'package:nasz_budzet_domowy/features/budgets/presentation/budgets_screen.dart';
 import 'package:nasz_budzet_domowy/features/categories/presentation/categories_screen.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:nasz_budzet_domowy/features/investments/presentation/investments_screen.dart';
 import 'package:nasz_budzet_domowy/features/transactions/presentation/transactions_list_screen.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/brand_watermark.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/glowing_button.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/neon_gradient_background.dart';
 
 /// Główny shell apki z dolną nawigacją M3.
-/// Cztery zakładki: Dashboard, Transakcje, Budżety, Kategorie.
-/// FAB (+) zawsze widoczny — otwiera ekran dodawania transakcji.
+/// Pięć zakładek: Dashboard, Transakcje, Budżety, Inwestycje, Kategorie.
+/// FAB (+) zawsze widoczny — na Inwestycjach dodaje pozycję portfela,
+/// w pozostałych zakładkach dodaje transakcję.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -25,8 +27,11 @@ class _HomeShellState extends State<HomeShell> {
     DashboardScreen(),
     TransactionsListScreen(),
     BudgetsScreen(),
+    InvestmentsScreen(),
     CategoriesScreen(),
   ];
+
+  static const _investmentsIndex = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +70,11 @@ class _HomeShellState extends State<HomeShell> {
             label: 'Budżety',
           ),
           NavigationDestination(
+            icon: Icon(Icons.trending_up_outlined),
+            selectedIcon: Icon(Icons.trending_up),
+            label: 'Inwestycje',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.category_outlined),
             selectedIcon: Icon(Icons.category),
             label: 'Kategorie',
@@ -72,8 +82,14 @@ class _HomeShellState extends State<HomeShell> {
         ],
       ),
       floatingActionButton: GlowingFAB(
-        onPressed: () => context.push('/transactions/add'),
-        tooltip: 'Dodaj transakcję',
+        onPressed: () => context.push(
+          _index == _investmentsIndex
+              ? '/investments/add'
+              : '/transactions/add',
+        ),
+        tooltip: _index == _investmentsIndex
+            ? 'Dodaj inwestycję'
+            : 'Dodaj transakcję',
         child: const Icon(Icons.add),
       ),
     );
