@@ -1,19 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/core/offline/sync_providers.dart';
-import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
-import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
-import 'package:nasz_budzet_domowy/features/household/presentation/invite_partner_sheet.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
-import 'package:nasz_budzet_domowy/shared/widgets/sync_status_indicator.dart';
 
 /// Lista transakcji bieżącego gospodarstwa.
 /// Renderuje się jako CustomScrollView (bez własnego Scaffold) —
@@ -50,7 +45,6 @@ class _TransactionsListScreenState
   Widget build(BuildContext context) {
     final transactions = ref.watch(transactionsProvider);
     final categories = ref.watch(categoriesProvider);
-    final householdId = ref.watch(currentHouseholdIdProvider).value;
 
     // Sprzątanie: gdy provider już wie o usunięciu, nie trzymamy ID w secie.
     final visibleIds =
@@ -59,67 +53,11 @@ class _TransactionsListScreenState
 
     return CustomScrollView(
       slivers: [
-        SliverAppBar(
-          title: const Text('Transakcje'),
+        const SliverAppBar(
+          title: Text('Transakcje'),
           centerTitle: false,
           floating: true,
           snap: true,
-          actions: [
-            const SyncStatusIndicator(),
-            IconButton(
-              tooltip: 'Odśwież',
-              icon: const Icon(Icons.refresh),
-              onPressed: () {
-                ref
-                  ..invalidate(transactionsProvider)
-                  ..invalidate(categoriesProvider);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Odświeżam dane…'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
-            ),
-            if (householdId != null)
-              IconButton(
-                tooltip: 'Zaproś partnera',
-                icon: const Icon(Icons.person_add_alt),
-                onPressed: () => showModalBottomSheet<void>(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) => InvitePartnerSheet(householdId: householdId),
-                ),
-              ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (v) async {
-                if (v == 'settings') {
-                  await context.push<void>('/settings');
-                } else if (v == 'logout') {
-                  await ref.read(authRepositoryProvider).signOut();
-                }
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: 'settings',
-                  child: ListTile(
-                    leading: Icon(Icons.settings_outlined),
-                    title: Text('Ustawienia'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'logout',
-                  child: ListTile(
-                    leading: Icon(Icons.logout),
-                    title: Text('Wyloguj'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
         // Pull-to-refresh — jak realtime padnie (np. zerwane wifi przy
         // wybudzeniu), user pociąga listę palcem od góry → fresh fetch.
