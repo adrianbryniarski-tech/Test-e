@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nasz_budzet_domowy/core/offline/local_db.dart';
 import 'package:nasz_budzet_domowy/core/offline/pending_ops_dao.dart';
@@ -118,26 +120,28 @@ void main() {
     expect(await dao.countAll(), 2);
   });
 
-  test('watchForHousehold emituje przy każdej zmianie', () async {
-    final stream = dao.watchForHousehold('h-1');
-    final events = <int>[];
-    final sub = stream.listen((list) => events.add(list.length));
-    // Pierwsza wartość: pusta lista.
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-    expect(events.last, 0);
+  test('watchForHousehold emituje stan po każdej zmianie', () async {
+    // StreamIterator pobiera kolejne emisje czekając aż FAKTYCZNIE nadejdą
+    // (zamiast sztywnych `Future.delayed`) — deterministycznie, bez flaky.
+    // Każda operacja DAO pinguje stream dokładnie raz, więc emisje i
+    // moveNext() są w jednoznacznej relacji 1:1.
+    final it = StreamIterator(dao.watchForHousehold('h-1'));
+
+    expect(await it.moveNext(), isTrue);
+    expect(it.current, isEmpty); // stan początkowy
 
     await dao.enqueue(makeOp(clientOpId: 'a'));
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-    expect(events.last, 1);
+    expect(await it.moveNext(), isTrue);
+    expect(it.current, hasLength(1));
 
     await dao.enqueue(makeOp(clientOpId: 'b'));
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-    expect(events.last, 2);
+    expect(await it.moveNext(), isTrue);
+    expect(it.current, hasLength(2));
 
     await dao.remove('a');
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-    expect(events.last, 1);
+    expect(await it.moveNext(), isTrue);
+    expect(it.current, hasLength(1));
 
-    await sub.cancel();
+    await it.cancel();
   });
 }

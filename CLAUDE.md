@@ -16,3 +16,6 @@
   `watchForHousehold` — przechodzi w izolacji).
 - Zmiany schematu bazy → nowa migracja w `supabase/migrations/` z kolejnym
   numerem; nie edytuj już zaaplikowanych migracji.
+- Po zmianie migracji / RLS / RPC uruchom testy bazy na prawdziwych
+  migracjach: `bash supabase/test/run_db_tests.sh --local` (te same testy
+  odpala CI w jobie „DB tests"). Asercje w `supabase/test/tests/*.sql`.
