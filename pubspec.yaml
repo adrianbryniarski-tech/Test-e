@@ -89,3 +89,21 @@ flutter:
     - family: Fredoka
       fonts:
         - asset: assets/fonts/Fredoka.ttf
+    # Baloo 2 — okrągła, przyjazna (motyw „Pokémon"). OFL 1.1.
+    - family: Baloo2
+      fonts:
+        - asset: assets/fonts/Baloo2.ttf
+    # Russo One — gruba, energetyczna (motyw „Dragon Ball", nagłówki). OFL 1.1.
+    - family: RussoOne
+      fonts:
+        - asset: assets/fonts/RussoOne.ttf
+    # Orbitron — sci-fi, retro-futuryzm (motyw „Synthwave"). OFL 1.1.
+    - family: Orbitron
+      fonts:
+        - asset: assets/fonts/Orbitron.ttf
+    # Space Mono — maszynowa, terminalowa (motyw „Cyber"). OFL 1.1.
+    - family: SpaceMono
+      fonts:
+        - asset: assets/fonts/SpaceMono.ttf
+        - asset: assets/fonts/SpaceMono-Bold.ttf
+          weight: 700

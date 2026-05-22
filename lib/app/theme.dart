@@ -65,6 +65,18 @@ enum AppThemeVariant {
     description:
         'Minimal premium: dużo bieli/czerni, wielka typografia, jeden '
         'żywy akcent. Czysto i nowocześnie.',
+  ),
+  dragonBall(
+    label: 'Dragon Ball',
+    description:
+        'Świat Dragon Ball: pomarańcz gi i energia ki, złote akcenty, '
+        'gruba „anime" typografia. Smocza kula w rogu.',
+  ),
+  pokemon(
+    label: 'Pokémon',
+    description:
+        'Świat Pokémon: błękit i czerwień Poké Ball, elektryczny żółty, '
+        'okrągła przyjazna czcionka. Poké Ball w rogu.',
   );
 
   const AppThemeVariant({required this.label, required this.description});
@@ -72,12 +84,19 @@ enum AppThemeVariant {
   final String label;
   final String description;
 
-  /// Czy motyw używa "premium" efektów neon: gradient tła, glow buttons,
-  /// animated borders. Tylko dla 3 neon-tematów.
+  /// Czy motyw używa "premium" efektów neon: glow buttons, animated borders.
+  /// Tylko dla 3 neon-tematów.
   bool get hasNeonEffects =>
       this == AppThemeVariant.cyber ||
       this == AppThemeVariant.synthwave ||
       this == AppThemeVariant.galaktyka;
+
+  /// Czy rysujemy subtelne dwukolorowe tło-gradient (neon + Dragon Ball,
+  /// Pokémon). Szersze niż [hasNeonEffects] — nie pociąga glow/animated.
+  bool get hasGradientBackground =>
+      hasNeonEffects ||
+      this == AppThemeVariant.dragonBall ||
+      this == AppThemeVariant.pokemon;
 
   /// Drugi kolor dla gradientu tła (poza primary z ColorScheme).
   /// Używany w `NeonGradientBackground` do subtle gradient'u.
@@ -85,6 +104,8 @@ enum AppThemeVariant {
         AppThemeVariant.cyber => const Color(0xFF00D9C0),
         AppThemeVariant.synthwave => const Color(0xFF6CC7FF),
         AppThemeVariant.galaktyka => const Color(0xFFFF6CD9),
+        AppThemeVariant.dragonBall => const Color(0xFFFFC400), // złota energia
+        AppThemeVariant.pokemon => const Color(0xFFFFCB05), // elektryczny żółty
         _ => const Color(0xFF000000),
       };
 }
@@ -116,7 +137,7 @@ class AppTheme {
         ? ThemeData.light(useMaterial3: true)
         : ThemeData.dark(useMaterial3: true);
 
-    final textTheme = _textThemeFor(base.textTheme, variant);
+    final textTheme = _textThemeFor(base.textTheme, variant, spec);
     final borderRadius = _borderRadiusFor(variant);
 
     // Kontur kart/pól — tylko motywy z `cardBorder` (Kredka). Reszta: brak.
@@ -257,6 +278,7 @@ class AppTheme {
               isDark ? const Color(0xFF000000) : const Color(0xFFF0FAF5),
           surface: isDark ? const Color(0xFF0A1410) : const Color(0xFFE0F7E8),
           cardElevation: isDark ? 0 : 1,
+          fontFamily: 'SpaceMono',
         ),
 
       // Synthwave / retro 80s — magenta + cyan, neonowy glow w ciemnym.
@@ -266,6 +288,7 @@ class AppTheme {
               isDark ? const Color(0xFF0D0421) : const Color(0xFFFFF0F8),
           surface: isDark ? const Color(0xFF1A0935) : const Color(0xFFFEE0F0),
           cardElevation: isDark ? 0 : 1,
+          headingFontFamily: 'Orbitron',
         ),
 
       // Deep space / galaxy — fioletowo-indigo na pure black, neonowe
@@ -289,6 +312,7 @@ class AppTheme {
           cardBorder:
               isDark ? const Color(0xFFFFE0C2) : const Color(0xFF231A12),
           cardBorderWidth: 2.5,
+          fontFamily: 'Fredoka',
         ),
 
       // Claymorphism — miękki fiolet, puszyste karty (elevation = miękki
@@ -310,6 +334,28 @@ class AppTheme {
           surface: isDark ? const Color(0xFF14141F) : const Color(0xFFFFFFFF),
           cardElevation: 0,
         ),
+
+      // Dragon Ball — pomarańcz gi Goku + złota energia ki, ciepłe tło,
+      // gruba „anime" typografia w nagłówkach (Russo One). Energetycznie.
+      AppThemeVariant.dragonBall => _ThemeSpec(
+          seed: isDark ? const Color(0xFFFF9D3D) : const Color(0xFFEF6C00),
+          background:
+              isDark ? const Color(0xFF160E06) : const Color(0xFFFFF4E6),
+          surface: isDark ? const Color(0xFF241809) : const Color(0xFFFFFFFF),
+          cardElevation: isDark ? 0 : 1,
+          headingFontFamily: 'RussoOne',
+        ),
+
+      // Pokémon — błękit logo + czerwień/żółty Poké Ball, jasne „niebo",
+      // okrągła przyjazna czcionka (Baloo 2). Wesoło i czytelnie.
+      AppThemeVariant.pokemon => _ThemeSpec(
+          seed: isDark ? const Color(0xFF5BA3E0) : const Color(0xFF2A75BB),
+          background:
+              isDark ? const Color(0xFF0B1420) : const Color(0xFFF0F7FF),
+          surface: isDark ? const Color(0xFF14202E) : const Color(0xFFFFFFFF),
+          cardElevation: 1,
+          fontFamily: 'Baloo2',
+        ),
     };
   }
 
@@ -326,11 +372,17 @@ class AppTheme {
       AppThemeVariant.kredka => 16, // pyzate, ale nie owalne
       AppThemeVariant.plastelina => 30, // mocno zaokrąglone, „z gliny"
       AppThemeVariant.aurora => 20,
+      AppThemeVariant.dragonBall => 14, // chunky, energetyczne
+      AppThemeVariant.pokemon => 18, // przyjazne, okrągławe
     };
   }
 
-  static TextTheme _textThemeFor(TextTheme base, AppThemeVariant variant) {
-    final common = base.copyWith(
+  static TextTheme _textThemeFor(
+    TextTheme base,
+    AppThemeVariant variant,
+    _ThemeSpec spec,
+  ) {
+    var common = base.copyWith(
       displayLarge: base.displayLarge?.copyWith(
         fontWeight: FontWeight.w700,
         letterSpacing: -1.5,
@@ -344,6 +396,25 @@ class AppTheme {
       ),
       titleLarge: base.titleLarge?.copyWith(fontWeight: FontWeight.w600),
     );
+
+    // Czcionka całego motywu (np. Fredoka, Baloo2, SpaceMono).
+    if (spec.fontFamily != null) {
+      common = common.apply(fontFamily: spec.fontFamily);
+    }
+    // Czcionka tylko nagłówków (ozdobny krój: Russo One, Orbitron) — body
+    // zostaje domyślne dla czytelności.
+    final heading = spec.headingFontFamily;
+    if (heading != null) {
+      common = common.copyWith(
+        displayLarge: common.displayLarge?.copyWith(fontFamily: heading),
+        displayMedium: common.displayMedium?.copyWith(fontFamily: heading),
+        displaySmall: common.displaySmall?.copyWith(fontFamily: heading),
+        headlineLarge: common.headlineLarge?.copyWith(fontFamily: heading),
+        headlineMedium: common.headlineMedium?.copyWith(fontFamily: heading),
+        headlineSmall: common.headlineSmall?.copyWith(fontFamily: heading),
+        titleLarge: common.titleLarge?.copyWith(fontFamily: heading),
+      );
+    }
 
     if (variant == AppThemeVariant.mono) {
       return common.copyWith(
@@ -362,22 +433,20 @@ class AppTheme {
       );
     }
 
-    // Kredka — zaokrąglona czcionka Fredoka na całej typografii + grube wagi
-    // dla „bajkowego" charakteru.
+    // Kredka — Fredoka (ze speca) + grube wagi dla „bajkowego" charakteru.
     if (variant == AppThemeVariant.kredka) {
-      final fredoka = common.apply(fontFamily: 'Fredoka');
-      return fredoka.copyWith(
-        displayLarge: fredoka.displayLarge?.copyWith(
+      return common.copyWith(
+        displayLarge: common.displayLarge?.copyWith(
           fontWeight: FontWeight.w700,
           letterSpacing: -0.5,
         ),
-        displayMedium: fredoka.displayMedium?.copyWith(
+        displayMedium: common.displayMedium?.copyWith(
           fontWeight: FontWeight.w700,
           letterSpacing: -0.3,
         ),
         headlineMedium:
-            fredoka.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
-        titleLarge: fredoka.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+            common.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
+        titleLarge: common.titleLarge?.copyWith(fontWeight: FontWeight.w600),
       );
     }
 
@@ -407,6 +476,8 @@ class _ThemeSpec {
     required this.cardElevation,
     this.cardBorder,
     this.cardBorderWidth = 0,
+    this.fontFamily,
+    this.headingFontFamily,
   });
 
   final Color seed;
@@ -417,6 +488,13 @@ class _ThemeSpec {
   /// Widoczny kontur kart i pól (motyw „Kredka"). `null` = brak konturu.
   final Color? cardBorder;
   final double cardBorderWidth;
+
+  /// Czcionka dla CAŁEJ typografii motywu. `null` = domyślna (Roboto).
+  final String? fontFamily;
+
+  /// Czcionka tylko dla nagłówków (display/headline/title) — gdy krój jest
+  /// ozdobny i nieczytelny w długim tekście (np. Russo One, Orbitron).
+  final String? headingFontFamily;
 }
 
 /// Paleta 12 odcieni dla kategorii (spójna z seedem migracji SQL).

@@ -31,9 +31,13 @@ const List<ChangelogEntry> kChangelog = [
     changes: [
       'Dodawanie głosem jest prostsze: stukasz mikrofon (nie trzeba już '
           'trzymać), a w okienku masz instrukcję i przykłady komend.',
-      'Nowe wyglądy: Kredka (komiksowy — czarne kontury i kropkowy raster), '
+      'Nowe wyglądy: Kredka (komiksowy — czarne kontury, kropkowy raster '
+          'i twardy cień pod kartami), '
           'Plastelina i Aurora. Motywy różnią się teraz też kształtami '
           'przycisków i kart, nie tylko kolorem. Wybierzesz w Ustawieniach.',
+      'Dwa motywy dla fanów anime: „Dragon Ball" (pomarańcz i energia, smocza '
+          'kula w rogu) oraz „Pokémon" (błękit i Poké Ball). Każdy ma własną '
+          'czcionkę i tematyczną ikonę.',
       'Podkategorie: pod kategorią główną (np. „Transport") możesz mieć '
           'podkategorie (np. „Paliwo"). Na wykresie liczą się do głównej.',
       'Nowy ekran „Co nowego" — tutaj po każdej aktualizacji zobaczysz '

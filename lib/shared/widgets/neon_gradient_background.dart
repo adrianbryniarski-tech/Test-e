@@ -33,7 +33,7 @@ class NeonGradientBackground extends ConsumerWidget {
       );
     }
 
-    if (!variant.hasNeonEffects) return child;
+    if (!variant.hasGradientBackground) return child;
 
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
