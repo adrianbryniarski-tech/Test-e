@@ -99,33 +99,80 @@ class _EmblemPainter extends CustomPainter {
   }
 
   void _paintDragonBall(Canvas canvas, Offset c, double r) {
+    final ballR = r * 0.72;
+    final ballRect = Rect.fromCircle(center: c, radius: ballR);
+
+    // Aura energii (złoty blask zanikający na zewnątrz).
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..shader = const RadialGradient(
+          colors: [Color(0x55FFC107), Color(0x00FFC107)],
+        ).createShader(Rect.fromCircle(center: c, radius: r)),
+    );
+
+    // Iskry ki dookoła kuli (na przemian długie/krótkie).
+    final spark = Paint()
+      ..color = const Color(0xFFFFD24D)
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < 8; i++) {
+      final a = i * math.pi / 4;
+      final inner = ballR * 1.06;
+      final outer = i.isEven ? r * 0.99 : ballR * 1.32;
+      canvas.drawLine(
+        Offset(c.dx + inner * math.cos(a), c.dy + inner * math.sin(a)),
+        Offset(c.dx + outer * math.cos(a), c.dy + outer * math.sin(a)),
+        spark,
+      );
+    }
+
+    // Kula z cieniowaniem 3D, połyskiem i obrysem.
     canvas
-      ..drawCircle(c, r, Paint()..color = const Color(0xFFF2A33C))
-      // Połysk w lewym górnym rogu.
       ..drawCircle(
-        Offset(c.dx - r * 0.3, c.dy - r * 0.3),
-        r * 0.35,
-        Paint()..color = const Color(0x66FFFFFF),
+        c,
+        ballR,
+        Paint()
+          ..shader = const RadialGradient(
+            center: Alignment(-0.4, -0.4),
+            radius: 1.1,
+            colors: [Color(0xFFFFD98A), Color(0xFFF2A33C), Color(0xFFD9740F)],
+            stops: [0.0, 0.55, 1.0],
+          ).createShader(ballRect),
+      )
+      ..drawCircle(
+        Offset(c.dx - ballR * 0.32, c.dy - ballR * 0.36),
+        ballR * 0.26,
+        Paint()..color = const Color(0x88FFFFFF),
       )
       ..drawCircle(
         c,
-        r,
+        ballR,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5
+          ..strokeWidth = 1.4
           ..color = const Color(0xFFC85A12),
       );
-    // Cztery czerwone gwiazdki w kwadracie.
-    final star = Paint()..color = const Color(0xFFD32F2F);
-    final d = r * 0.38;
-    final sr = r * 0.22;
+
+    // Cztery czerwone gwiazdki z cienkim obrysem (lepszy kontrast).
+    final starFill = Paint()..color = const Color(0xFFE53935);
+    final starLine = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8
+      ..color = const Color(0xFF8E1B1B);
+    final d = ballR * 0.4;
+    final sr = ballR * 0.24;
     for (final o in [
       Offset(c.dx - d, c.dy - d),
       Offset(c.dx + d, c.dy - d),
       Offset(c.dx - d, c.dy + d),
       Offset(c.dx + d, c.dy + d),
     ]) {
-      canvas.drawPath(_starPath(o, sr), star);
+      final p = _starPath(o, sr);
+      canvas
+        ..drawPath(p, starFill)
+        ..drawPath(p, starLine);
     }
   }
 
@@ -145,6 +192,12 @@ class _EmblemPainter extends CustomPainter {
         Paint()..color = const Color(0xFFE3350D),
       )
       ..drawArc(whole, 0, math.pi, true, Paint()..color = Colors.white)
+      // Połysk na czerwonej kopule.
+      ..drawCircle(
+        Offset(c.dx - r * 0.34, c.dy - r * 0.42),
+        r * 0.24,
+        Paint()..color = const Color(0x66FFFFFF),
+      )
       // Czarny pas równikowy + obrys kuli.
       ..drawLine(Offset(c.dx - r, c.dy), Offset(c.dx + r, c.dy), black)
       ..drawCircle(

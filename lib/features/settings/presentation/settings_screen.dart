@@ -8,6 +8,7 @@ import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/voice_input_service.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -172,7 +173,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Card(
+          ComicCard(
             child: ListTile(
               leading: const Icon(Icons.help_outline),
               title: const Text('Pomoc — jak to działa'),
@@ -185,7 +186,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Card(
+          ComicCard(
             child: ListTile(
               leading: const Icon(Icons.auto_awesome_outlined),
               title: const Text('Co nowego'),
@@ -197,7 +198,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Card(
+          ComicCard(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
@@ -350,13 +351,13 @@ class _HouseholdInfoCard extends ConsumerWidget {
     final currentUser = ref.watch(currentUserProvider);
 
     return householdAsync.when(
-      loading: () => const Card(
+      loading: () => const ComicCard(
         child: Padding(
           padding: EdgeInsets.all(20),
           child: Center(child: CircularProgressIndicator()),
         ),
       ),
-      error: (e, _) => Card(
+      error: (e, _) => ComicCard(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
@@ -367,7 +368,7 @@ class _HouseholdInfoCard extends ConsumerWidget {
       ),
       data: (householdId) {
         if (householdId == null) {
-          return const Card(
+          return const ComicCard(
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Text('Nie należysz do żadnego gospodarstwa.'),
@@ -376,7 +377,7 @@ class _HouseholdInfoCard extends ConsumerWidget {
         }
         final infoAsync = ref.watch(householdInfoProvider(householdId));
         final membersAsync = ref.watch(householdMembersProvider(householdId));
-        return Card(
+        return ComicCard(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
@@ -437,9 +438,7 @@ class _HouseholdInfoCard extends ConsumerWidget {
                             child: Row(
                               children: [
                                 Icon(
-                                  m.isOwner
-                                      ? Icons.star
-                                      : Icons.person_outline,
+                                  m.isOwner ? Icons.star : Icons.person_outline,
                                   size: 18,
                                   color: m.isOwner
                                       ? theme.colorScheme.primary
@@ -457,8 +456,7 @@ class _HouseholdInfoCard extends ConsumerWidget {
                                 Text(
                                   m.isOwner ? 'owner' : 'member',
                                   style: theme.textTheme.labelSmall?.copyWith(
-                                    color:
-                                        theme.colorScheme.onSurfaceVariant,
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -545,9 +543,7 @@ class _HouseholdInfoCard extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     final goRouter = GoRouter.of(context);
     try {
-      await ref
-          .read(householdRepositoryProvider)
-          .leaveHousehold(householdId);
+      await ref.read(householdRepositoryProvider).leaveHousehold(householdId);
       // Inwaliduje WSZYSTKIE hh providers, żeby router wykrył brak hh
       // i nie pokazywał starych członków.
       ref
@@ -662,7 +658,7 @@ class _VoiceModelCardState extends State<_VoiceModelCard> {
     final status = _service.status;
 
     if (status == VoiceStatus.ready) {
-      return Card(
+      return ComicCard(
         child: ListTile(
           leading: Icon(Icons.check_circle, color: cs.primary),
           title: const Text('Model gotowy'),
@@ -681,7 +677,7 @@ class _VoiceModelCardState extends State<_VoiceModelCard> {
           : progress == null
               ? 'Pobieranie…'
               : 'Pobieranie… ${(progress * 100).round()}%';
-      return Card(
+      return ComicCard(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -700,7 +696,7 @@ class _VoiceModelCardState extends State<_VoiceModelCard> {
     }
 
     // unavailable — przycisk pobierania (+ ewentualny błąd).
-    return Card(
+    return ComicCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -755,7 +751,7 @@ class _AnimationTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(animationSettingsProvider);
     final enabled = settings.isOn(animation);
-    return Card(
+    return ComicCard(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: SwitchListTile(
         value: enabled,

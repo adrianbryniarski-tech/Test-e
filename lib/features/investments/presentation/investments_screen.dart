@@ -8,6 +8,7 @@ import 'package:nasz_budzet_domowy/features/investments/application/investment_p
 import 'package:nasz_budzet_domowy/features/investments/data/investment.dart';
 import 'package:nasz_budzet_domowy/features/investments/data/investment_repository.dart';
 import 'package:nasz_budzet_domowy/features/investments/presentation/widgets/portfolio_chart.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 
 /// Zakładka Inwestycje: wartość portfela + wykres + lista pozycji
@@ -27,8 +28,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
   final Set<String> _locallyDeleted = {};
 
   void _hideLocally(String id) => setState(() => _locallyDeleted.add(id));
-  void _restoreLocally(String id) =>
-      setState(() => _locallyDeleted.remove(id));
+  void _restoreLocally(String id) => setState(() => _locallyDeleted.remove(id));
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +107,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                 // Header: wartość portfela + zysk + wykres
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Card(
+                  child: ComicCard(
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: Column(
@@ -371,74 +371,75 @@ class _ValuationTile extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Card(
+      child: ComicCard(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => _showActions(context, ref),
           child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              _AssetAvatar(type: inv.assetType, symbol: inv.symbol),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                _AssetAvatar(type: inv.assetType, symbol: inv.symbol),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        inv.displayName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$qtyStr ${inv.unitLabel}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'po ${fmt.format(inv.buyPricePerUnitPln)} • '
+                        '${dateFmt.format(inv.purchasedAt)}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      inv.displayName,
+                      fmt.format(valuation.currentValuePln),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      '$qtyStr ${inv.unitLabel}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    if (valuation.hasPrice)
+                      Text(
+                        '${valuation.isProfit ? '+' : ''}'
+                        '${fmt.format(valuation.profitPln)} '
+                        '(${valuation.isProfit ? '+' : ''}'
+                        '${valuation.profitPercent.toStringAsFixed(1)}%)',
+                        style:
+                            theme.textTheme.bodySmall?.copyWith(color: color),
+                      )
+                    else
+                      Text(
+                        'kurs niedostępny',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'po ${fmt.format(inv.buyPricePerUnitPln)} • '
-                      '${dateFmt.format(inv.purchasedAt)}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.8),
-                      ),
-                    ),
                   ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    fmt.format(valuation.currentValuePln),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  if (valuation.hasPrice)
-                    Text(
-                      '${valuation.isProfit ? '+' : ''}'
-                      '${fmt.format(valuation.profitPln)} '
-                      '(${valuation.isProfit ? '+' : ''}'
-                      '${valuation.profitPercent.toStringAsFixed(1)}%)',
-                      style: theme.textTheme.bodySmall?.copyWith(color: color),
-                    )
-                  else
-                    Text(
-                      'kurs niedostępny',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
+              ],
+            ),
           ),
         ),
       ),

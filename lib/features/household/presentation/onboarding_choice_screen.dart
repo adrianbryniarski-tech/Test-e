@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 
 /// Pierwszy ekran po logowaniu (gdy user nie należy do żadnego gospodarstwa).
 ///
@@ -100,7 +101,7 @@ class _ChoiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return ComicCard(
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),

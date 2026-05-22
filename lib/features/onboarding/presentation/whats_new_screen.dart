@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nasz_budzet_domowy/features/onboarding/data/changelog.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 
 /// Ekran „Co nowego" — historia zmian, najnowsze na górze. Dostępny z
 /// Ustawień. Treść w `changelog.dart` (lista [kChangelog]).
@@ -15,7 +16,7 @@ class WhatsNewScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
           for (final entry in kChangelog)
-            Card(
+            ComicCard(
               margin: const EdgeInsets.only(bottom: 12),
               child: Padding(
                 padding: const EdgeInsets.all(16),
