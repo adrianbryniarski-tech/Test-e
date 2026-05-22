@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 
 /// Pokazuje wygenerowany kod zaproszenia po stworzeniu gospodarstwa.
 ///
@@ -79,7 +80,7 @@ class _CodeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return ComicCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(

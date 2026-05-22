@@ -40,3 +40,38 @@ class ComicShadow extends ConsumerWidget {
     );
   }
 }
+
+/// `Card` z komiksowym cieniem dla „Kredki" (poza tym zachowuje się jak zwykły
+/// Card). Drop-in zamiennik: wystarczy `Card(` → `ComicCard(`.
+class ComicCard extends ConsumerWidget {
+  const ComicCard({
+    super.key,
+    this.child,
+    this.color,
+    this.elevation,
+    this.margin,
+    this.shape,
+    this.clipBehavior,
+  });
+
+  final Widget? child;
+  final Color? color;
+  final double? elevation;
+  final EdgeInsetsGeometry? margin;
+  final ShapeBorder? shape;
+  final Clip? clipBehavior;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ComicShadow(
+      child: Card(
+        color: color,
+        elevation: elevation,
+        margin: margin,
+        shape: shape,
+        clipBehavior: clipBehavior,
+        child: child,
+      ),
+    );
+  }
+}

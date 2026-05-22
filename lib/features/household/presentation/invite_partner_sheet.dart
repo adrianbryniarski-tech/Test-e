@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/household/data/household_repository.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 
 /// Bottom sheet do udostępnienia kodu zaproszenia.
 /// Pokazuje aktywne (nieprzyjęte, niewygasłe) zaproszenia gospodarstwa.
@@ -153,9 +154,8 @@ class _CodeBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final daysLeft =
-        invitation.expiresAt.difference(DateTime.now()).inDays;
-    return Card(
+    final daysLeft = invitation.expiresAt.difference(DateTime.now()).inDays;
+    return ComicCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Column(

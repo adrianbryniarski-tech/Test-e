@@ -10,6 +10,7 @@ import 'package:nasz_budzet_domowy/features/investments/application/investment_p
 import 'package:nasz_budzet_domowy/features/investments/data/investment.dart';
 import 'package:nasz_budzet_domowy/features/investments/data/investment_repository.dart';
 import 'package:nasz_budzet_domowy/features/investments/data/price_service.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
 
@@ -100,8 +101,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
     }
     _debounce = Timer(const Duration(milliseconds: 400), () async {
       setState(() => _searching = true);
-      final results =
-          await ref.read(priceServiceProvider).searchCrypto(q);
+      final results = await ref.read(priceServiceProvider).searchCrypto(q);
       if (!mounted) return;
       setState(() {
         _searchResults = results;
@@ -300,7 +300,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
               // Tryb edycji: typ i aktywo są stałe — pokazujemy je tylko
               // jako podgląd, nie do zmiany.
               if (_isEditing) ...[
-                Card(
+                ComicCard(
                   child: ListTile(
                     leading: Icon(
                       switch (_type) {
@@ -375,8 +375,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
                             child: SizedBox(
                               width: 18,
                               height: 18,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           )
                         : null,

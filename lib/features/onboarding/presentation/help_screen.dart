@@ -4,6 +4,7 @@
 // ignore_for_file: no_adjacent_strings_in_list
 
 import 'package:flutter/material.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 
 /// Statyczny ekran pomocy — instrukcje krok-po-kroku. Dostępny zawsze
 /// z Ustawień. Cel: żeby właściciel apki nie musiał każdej nowej osobie
@@ -175,7 +176,7 @@ class _HelpSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return ComicCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
