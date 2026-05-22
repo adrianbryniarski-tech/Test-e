@@ -357,42 +357,86 @@ class _CategoryPickerField extends StatelessWidget {
         child: Text('Błąd: $e'),
       ),
       data: (_) {
+        // Grupujemy: kategoria główna, a pod nią wcięte podkategorie.
+        // Można wybrać dowolny poziom.
+        final ordered = _groupByParent(items);
         // Zaznaczona wartość MUSI być dokładnie jednym z elementów listy —
         // inaczej DropdownButton rzuca asercję. Wyznaczamy ją z aktualnej
         // listy po `id` (gdy kategorii już nie ma / zła dla typu → null).
         final value =
-            items.where((c) => c.id == selected?.id).firstOrNull;
+            ordered.where((c) => c.id == selected?.id).firstOrNull;
         return DropdownButtonFormField<Category>(
           // `key` per typ wymusza rebuild dropdownu gdy user przełączy
           // wydatek↔dochód — inaczej wewnętrzny stan FormField może
           // zostać przy starej kategorii (poprzedniego typu).
-          key: ValueKey(items.firstOrNull?.type),
+          key: ValueKey(ordered.firstOrNull?.type),
           initialValue: value,
           isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Kategoria',
             prefixIcon: Icon(Icons.category_outlined),
           ),
-          items: items
-              .map(
-                (c) => DropdownMenuItem<Category>(
-                  value: c,
+          items: [
+            for (final c in ordered)
+              DropdownMenuItem<Category>(
+                value: c,
+                child: Padding(
+                  padding: EdgeInsets.only(left: c.isSubcategory ? 20 : 0),
                   child: Row(
                     children: [
+                      if (c.isSubcategory)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Icon(
+                            Icons.subdirectory_arrow_right,
+                            size: 16,
+                            color: Theme.of(context).colorScheme
+                                .onSurfaceVariant,
+                          ),
+                        ),
                       CategoryAvatar(category: c, size: 28),
                       const SizedBox(width: 12),
-                      Text(c.name),
+                      Flexible(
+                        child: Text(c.name, overflow: TextOverflow.ellipsis),
+                      ),
                     ],
                   ),
                 ),
-              )
-              .toList(),
+              ),
+          ],
           onChanged: onChanged,
           validator: (v) => v == null ? 'Wybierz kategorię.' : null,
         );
       },
     );
   }
+}
+
+/// Porządkuje kategorie hierarchicznie: każda kategoria główna, a zaraz po
+/// niej jej podkategorie (alfabetycznie). Sieroty (podkategoria bez rodzica
+/// na liście) trafiają na koniec.
+List<Category> _groupByParent(List<Category> items) {
+  int byName(Category a, Category b) =>
+      a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  final tops = items.where((c) => c.parentId == null).toList()..sort(byName);
+  final childrenByParent = <String, List<Category>>{};
+  for (final c in items.where((c) => c.parentId != null)) {
+    childrenByParent.putIfAbsent(c.parentId!, () => []).add(c);
+  }
+  final topIds = tops.map((c) => c.id).toSet();
+  final ordered = <Category>[];
+  for (final top in tops) {
+    ordered.add(top);
+    final kids = childrenByParent[top.id] ?? const [];
+    ordered.addAll(kids.toList()..sort(byName));
+  }
+  // Podkategorie, których rodzica nie ma w tym zbiorze.
+  for (final c in items.where(
+    (c) => c.parentId != null && !topIds.contains(c.parentId),
+  )) {
+    ordered.add(c);
+  }
+  return ordered;
 }
 
 class _CategoryFieldShell extends StatelessWidget {

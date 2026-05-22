@@ -32,4 +32,29 @@ void main() {
       expect(swiezaLista.where((c) => c.id == stary.id).length, 1);
     });
   });
+
+  group('Category podkategorie', () {
+    Map<String, dynamic> json({String? parentId}) => {
+          'id': 'c1',
+          'household_id': 'h1',
+          'name': 'Paliwo',
+          'icon': 'local_gas_station',
+          'color': '#E8A24A',
+          'type': 'expense',
+          'is_system': false,
+          'parent_id': parentId,
+        };
+
+    test('parent_id null → kategoria główna', () {
+      final c = Category.fromJson(json());
+      expect(c.parentId, isNull);
+      expect(c.isSubcategory, isFalse);
+    });
+
+    test('parent_id ustawione → podkategoria', () {
+      final c = Category.fromJson(json(parentId: 'parent-1'));
+      expect(c.parentId, 'parent-1');
+      expect(c.isSubcategory, isTrue);
+    });
+  });
 }

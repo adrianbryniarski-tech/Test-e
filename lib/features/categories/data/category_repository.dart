@@ -35,12 +35,14 @@ class CategoryRepository {
   }
 
   /// Dodaje nową własną kategorię. RLS blokuje insert z `is_system=true`.
+  /// `parentId` != null → podkategoria (musi być ten sam typ co rodzic).
   Future<CategoryWriteResult> insert({
     required String householdId,
     required String name,
     required String icon,
     required String colorHex,
     required TransactionType type,
+    String? parentId,
   }) async {
     try {
       await supabase.from('categories').insert({
@@ -50,6 +52,7 @@ class CategoryRepository {
         'color': colorHex,
         'type': type.toDbValue(),
         'is_system': false,
+        'parent_id': parentId,
       });
       return const CategoryWriteSuccess();
     } on PostgrestException catch (e) {
@@ -59,13 +62,15 @@ class CategoryRepository {
   }
 
   /// Aktualizuje własną kategorię. System (`is_system=true`) jest blokowany
-  /// przez RLS — UI nie powinien w ogóle pokazywać edycji.
+  /// przez RLS — UI nie powinien w ogóle pokazywać edycji. `parentId`
+  /// ustawia/zmienia kategorię nadrzędną (null = kategoria główna).
   Future<CategoryWriteResult> update({
     required String id,
     required String name,
     required String icon,
     required String colorHex,
     required TransactionType type,
+    String? parentId,
   }) async {
     try {
       await supabase.from('categories').update({
@@ -73,6 +78,7 @@ class CategoryRepository {
         'icon': icon,
         'color': colorHex,
         'type': type.toDbValue(),
+        'parent_id': parentId,
       }).eq('id', id);
       return const CategoryWriteSuccess();
     } on PostgrestException catch (e) {

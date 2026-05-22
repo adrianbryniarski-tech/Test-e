@@ -13,6 +13,7 @@ class Category {
     required this.colorHex,
     required this.type,
     required this.isSystem,
+    this.parentId,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -24,6 +25,7 @@ class Category {
       colorHex: json['color'] as String,
       type: TransactionType.fromDbValue(json['type'] as String),
       isSystem: json['is_system'] as bool? ?? false,
+      parentId: json['parent_id'] as String?,
     );
   }
 
@@ -36,6 +38,12 @@ class Category {
   final String colorHex;
   final TransactionType type;
   final bool isSystem;
+
+  /// id kategorii nadrzędnej (null = kategoria główna). Jeden poziom
+  /// zagnieżdżenia — podkategoria nie może mieć własnych podkategorii.
+  final String? parentId;
+
+  bool get isSubcategory => parentId != null;
 
   // Równość po `id` (PK). Bez tego dwie instancje tej samej kategorii (np.
   // po przeładowaniu listy z bazy) są "różne" — a DropdownButton wymaga, by

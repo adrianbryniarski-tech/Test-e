@@ -66,16 +66,47 @@ class CategoriesScreen extends ConsumerWidget {
             child: Center(child: InlineError(message: e.toString())),
           ),
           data: (categories) {
-            final expenses = categories
-                .where((c) => c.type == TransactionType.expense)
-                .toList();
-            final incomes = categories
-                .where((c) => c.type == TransactionType.income)
-                .toList();
+            // Mapa rodzic → posortowane podkategorie.
+            final childrenByParent = <String, List<Category>>{};
+            for (final c in categories.where((c) => c.parentId != null)) {
+              childrenByParent.putIfAbsent(c.parentId!, () => []).add(c);
+            }
+
+            // Buduje wiersze danego typu: kategorie główne, a pod każdą
+            // jej podkategorie (wcięte).
+            List<Widget> rowsFor(TransactionType type) {
+              final tops = categories
+                  .where((c) => c.type == type && c.parentId == null)
+                  .toList();
+              final out = <Widget>[];
+              for (final top in tops) {
+                out.add(
+                  _CategoryRow(
+                    category: top,
+                    count: counts[top.id] ?? 0,
+                    isChild: false,
+                  ),
+                );
+                for (final child
+                    in childrenByParent[top.id] ?? const <Category>[]) {
+                  out.add(
+                    _CategoryRow(
+                      category: child,
+                      count: counts[child.id] ?? 0,
+                      isChild: true,
+                    ),
+                  );
+                }
+              }
+              return out;
+            }
+
+            final expenseRows = rowsFor(TransactionType.expense);
+            final incomeRows = rowsFor(TransactionType.income);
 
             return SliverList(
               delegate: SliverChildListDelegate([
-                if (expenses.isNotEmpty) ...[
+                if (expenseRows.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                     child: Text(
@@ -84,14 +115,9 @@ class CategoriesScreen extends ConsumerWidget {
                           ?.copyWith(color: cs.onSurfaceVariant),
                     ),
                   ),
-                  ...expenses.map(
-                    (cat) => _CategoryRow(
-                      category: cat,
-                      count: counts[cat.id] ?? 0,
-                    ),
-                  ),
+                  ...expenseRows,
                 ],
-                if (incomes.isNotEmpty) ...[
+                if (incomeRows.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                     child: Text(
@@ -100,12 +126,7 @@ class CategoriesScreen extends ConsumerWidget {
                           ?.copyWith(color: cs.onSurfaceVariant),
                     ),
                   ),
-                  ...incomes.map(
-                    (cat) => _CategoryRow(
-                      category: cat,
-                      count: counts[cat.id] ?? 0,
-                    ),
-                  ),
+                  ...incomeRows,
                 ],
                 const SizedBox(height: 96),
               ]),
@@ -134,6 +155,14 @@ Future<bool?> _openEditSheet(BuildContext context, Category category) {
   );
 }
 
+Future<bool?> _openSubcategorySheet(BuildContext context, Category parent) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => CategoryEditSheet(initialParentId: parent.id),
+  );
+}
+
 Future<bool?> _openDeleteDialog(BuildContext context, Category category) {
   return showDialog<bool>(
     context: context,
@@ -142,16 +171,47 @@ Future<bool?> _openDeleteDialog(BuildContext context, Category category) {
 }
 
 class _CategoryRow extends ConsumerWidget {
-  const _CategoryRow({required this.category, required this.count});
+  const _CategoryRow({
+    required this.category,
+    required this.count,
+    required this.isChild,
+  });
 
   final Category category;
   final int count;
 
+  /// true = podkategoria (wcięta, bez przycisku dodawania pod-pod).
+  final bool isChild;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+
+    // Przycisk "dodaj podkategorię" — tylko dla kategorii głównych (system
+    // i własnych). Podkategorie nie mają własnych pod-podkategorii.
+    final addSubBtn = isChild
+        ? null
+        : IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: 'Dodaj podkategorię',
+            icon: const Icon(Icons.add, size: 20),
+            onPressed: () => _openSubcategorySheet(context, category),
+          );
+
+    final endIcon = category.isSystem
+        ? Tooltip(
+            message: 'Kategoria systemowa (read-only)',
+            child: Icon(
+              Icons.lock_outline,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        : const Icon(Icons.chevron_right);
+
     final tile = ListTile(
-      leading: CategoryAvatar(category: category),
+      contentPadding: EdgeInsets.only(left: isChild ? 40 : 16, right: 8),
+      leading: CategoryAvatar(category: category, size: isChild ? 30 : 36),
       title: Text(category.name),
       subtitle: count > 0
           ? Text('$count ${_pluralTx(count)}')
@@ -159,17 +219,14 @@ class _CategoryRow extends ConsumerWidget {
               'Brak transakcji',
               style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
             ),
-      trailing: category.isSystem
-          ? Tooltip(
-              message: 'Kategoria systemowa (read-only)',
-              child: Icon(
-                Icons.lock_outline,
-                size: 18,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          : const Icon(Icons.chevron_right),
-      onTap: () => _openEditSheet(context, category),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (addSubBtn != null) addSubBtn,
+          endIcon,
+        ],
+      ),
+      onTap: category.isSystem ? null : () => _openEditSheet(context, category),
     );
 
     if (category.isSystem) {
