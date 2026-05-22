@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:archive/archive_io.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:vosk_flutter_2/vosk_flutter_2.dart';
 
@@ -45,8 +47,8 @@ class VoiceError extends VoiceResult {
 /// 2. `startListening()` / `stopListening()` — push-to-talk.
 /// 3. `dispose()` — zwalnia zasoby.
 ///
-/// Jeśli model nie istnieje, `status` = `unavailable`.
-/// Model pobierany ręcznie przez usera przez `downloadModel()`.
+/// Jeśli model nie istnieje, `status` = `unavailable`. User pobiera go
+/// w Ustawieniach → „Sterowanie głosem" przez [downloadModel].
 class VoiceInputService extends ChangeNotifier {
   VoiceInputService._();
 
@@ -68,6 +70,20 @@ class VoiceInputService extends ChangeNotifier {
   String? _partialTranscript;
   String? get partialTranscript => _partialTranscript;
 
+  // Stan pobierania modelu (do UI w Ustawieniach).
+  bool _downloading = false;
+  bool get isDownloading => _downloading;
+
+  /// Postęp pobierania 0..1 (faza ściągania pliku). null = nieznany rozmiar.
+  double? _downloadProgress;
+  double? get downloadProgress => _downloadProgress;
+
+  String? _downloadError;
+  String? get downloadError => _downloadError;
+
+  /// Czy model jest już na dysku (gotowy lub do załadowania).
+  Future<bool> isModelDownloaded() async => (await _modelDir()).existsSync();
+
   Future<void> init() async {
     final dir = await _modelDir();
     if (!dir.existsSync()) {
@@ -76,6 +92,73 @@ class VoiceInputService extends ChangeNotifier {
       return;
     }
     await _loadModel(dir.path);
+  }
+
+  /// Pobiera i rozpakowuje model Vosk (~50 MB), a następnie ładuje go.
+  /// Postęp i błędy są wystawiane przez gettery + [notifyListeners].
+  Future<void> downloadModel() async {
+    if (_downloading) return;
+    _downloading = true;
+    _downloadProgress = null;
+    _downloadError = null;
+    notifyListeners();
+
+    http.Client? client;
+    try {
+      final support = await getApplicationSupportDirectory();
+      support.createSync(recursive: true);
+      final targetDir = await _modelDir();
+      // Sprzątamy ewentualny niedokończony pobór.
+      if (targetDir.existsSync()) targetDir.deleteSync(recursive: true);
+      final zipPath = '${support.path}/$_modelDirName.zip';
+      final zipFile = File(zipPath);
+      if (zipFile.existsSync()) zipFile.deleteSync();
+
+      // Strumieniujemy do pliku, żeby nie trzymać 50 MB w pamięci.
+      client = http.Client();
+      final resp =
+          await client.send(http.Request('GET', Uri.parse(modelUrl)));
+      if (resp.statusCode != 200) {
+        throw HttpException('Serwer zwrócił HTTP ${resp.statusCode}');
+      }
+      final total = resp.contentLength ?? 0;
+      var received = 0;
+      final sink = zipFile.openWrite();
+      await for (final chunk in resp.stream) {
+        sink.add(chunk);
+        received += chunk.length;
+        _downloadProgress = total > 0 ? received / total : null;
+        notifyListeners();
+      }
+      await sink.close();
+      client.close();
+      client = null;
+
+      // Rozpakowanie ZIP-a (zawiera folder vosk-model-small-pl-0.22/…)
+      // bezpośrednio do katalogu support.
+      _downloadProgress = 1;
+      notifyListeners();
+      await extractFileToDisk(zipPath, support.path);
+      zipFile.deleteSync();
+
+      if (!targetDir.existsSync()) {
+        throw const FileSystemException('Rozpakowany model nie istnieje');
+      }
+      _downloading = false;
+      _downloadProgress = null;
+      notifyListeners();
+      await _loadModel(targetDir.path);
+    } on Object catch (e) {
+      debugPrint('Vosk download error: $e');
+      client?.close();
+      _downloading = false;
+      _downloadProgress = null;
+      _downloadError = e is HttpException
+          ? e.message
+          : 'Nie udało się pobrać modelu. Sprawdź internet i spróbuj ponownie.';
+      _status = VoiceStatus.unavailable;
+      notifyListeners();
+    }
   }
 
   Future<Directory> _modelDir() async {
@@ -157,14 +240,6 @@ class VoiceInputService extends ChangeNotifier {
     if (q2 == -1) return null;
     final text = json.substring(q1 + 1, q2).trim();
     return text.isEmpty ? null : text;
-  }
-
-  /// Oznacza model jako pobrany i ładuje go.
-  Future<void> notifyModelDownloaded() async {
-    final dir = await _modelDir();
-    if (dir.existsSync()) {
-      await _loadModel(dir.path);
-    }
   }
 
   @override
