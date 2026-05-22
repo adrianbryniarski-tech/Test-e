@@ -29,8 +29,13 @@ const List<ChangelogEntry> kChangelog = [
     date: '22 maja 2026',
     title: 'Wygodniejszy głos, nowe wyglądy i podkategorie',
     changes: [
+      'Naprawiony mikrofon: apka prosi teraz o zgodę na mikrofon, a „Słucham…" '
+          'pojawia się dopiero gdy mikrofon naprawdę nagrywa (wcześniej ginął '
+          'początek zdania). Końcówka nagrania też nie jest już ucinana.',
       'Dodawanie głosem jest prostsze: stukasz mikrofon (nie trzeba już '
           'trzymać), a w okienku masz instrukcję i przykłady komend.',
+      'Płynność: komiksowe tło i gradienty są teraz zapamiętywane jako '
+          'gotowy obrazek, więc przewijanie nie przycina.',
       'Nowe wyglądy: Kredka (komiksowy — czarne kontury, kropkowy raster '
           'i twardy cień pod kartami), '
           'Plastelina i Aurora. Motywy różnią się teraz też kształtami '
