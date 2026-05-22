@@ -69,6 +69,21 @@ class HelpScreen extends StatelessWidget {
             ],
           ),
           _HelpSection(
+            emoji: '🏷️',
+            title: 'Kategorie i podkategorie',
+            steps: [
+              'Zakładka „Kategorie" (dolny pasek) — osobno wydatki '
+                  'i dochody.',
+              'Ikona + u góry → nowa kategoria (nazwa, kolor, ikona, typ).',
+              'Przy każdej kategorii głównej jest „+" — dodaje podkategorię '
+                  '(np. pod „Transport" → „Paliwo", „Serwis").',
+              'Podkategorię wybierzesz przy dodawaniu transakcji; na wykresie '
+                  'jej wydatki liczą się do kategorii głównej.',
+              'Własne: stuknij by edytować, przesuń w lewo by usunąć '
+                  '(z przeniesieniem transakcji). Systemowe są zablokowane.',
+            ],
+          ),
+          _HelpSection(
             emoji: '🗑️',
             title: 'Jak usunąć pomyłkę',
             steps: [
@@ -84,6 +99,21 @@ class HelpScreen extends StatelessWidget {
               'Ikona + → wybierz kategorię wydatków, wpisz kwotę.',
               'Pasek pokaże ile już wydaliście: zielony / żółty / '
                   'czerwony (przekroczone).',
+            ],
+          ),
+          _HelpSection(
+            emoji: '📈',
+            title: 'Inwestycje (krypto, złoto, srebro)',
+            steps: [
+              'Zakładka „Inwestycje" (dolny pasek).',
+              'Ikona + → wybierz krypto / złoto / srebro, podaj ilość, '
+                  'datę i cenę zakupu.',
+              'Cenę możesz wpisać w PLN, USD lub EUR — przeliczymy na PLN '
+                  'po kursie NBP z dnia zakupu.',
+              'Dokupienie tego samego aktywa scala się w jedną pozycję '
+                  'ze średnią ceną zakupu.',
+              'Wartość i zysk/strata liczą się po aktualnych kursach; '
+                  'wykres pokazuje wartość portfela w czasie.',
             ],
           ),
           _HelpSection(
