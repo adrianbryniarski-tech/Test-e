@@ -109,3 +109,35 @@ jobs:
               issue_number: context.payload.pull_request.number,
               body: body.substring(0, 60000),
             });
+
+  db-tests:
+    name: DB tests (migracje + RLS na Postgresie)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      # Aplikuje prawdziwe migracje na czystym Postgresie (przez shim) i
+      # uruchamia testy SQL: trigger podkategorii, RPC reassign, izolacja RLS.
+      - name: Run DB tests
+        run: bash supabase/test/run_db_tests.sh
