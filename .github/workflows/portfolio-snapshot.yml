@@ -1,0 +1,27 @@
+name: Portfolio snapshot
+
+# Codziennie zapisuje wartość portfela inwestycyjnego do
+# `portfolio_snapshots`, żeby wykres wartości w czasie miał ciągłą
+# historię nawet gdy nikt nie wchodzi do apki. Liczy kursy z darmowych
+# źródeł (CoinGecko / NBP / stooq). Koszt: ~1 min/dzień (free tier).
+
+on:
+  schedule:
+    - cron: '30 18 * * *'  # codziennie 18:30 UTC (po notowaniach)
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    name: Zapisz dzienny snapshot portfela
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Uruchom snapshot
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node tools/portfolio_snapshot.mjs

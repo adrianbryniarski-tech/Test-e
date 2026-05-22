@@ -29,12 +29,27 @@ class PriceService {
   final http.Client _client;
   static const _timeout = Duration(seconds: 12);
 
+  // Cache anty-rate-limit: CoinGecko free ~30 zapytań/min. Zbyt częste
+  // odświeżanie zwraca 429 → "kurs niedostępny". Trzymamy ostatnie kursy
+  // i nie pukamy do API częściej niż co [_cacheTtl].
+  static const _cacheTtl = Duration(seconds: 30);
+  final Map<String, double> _lastPrices = {};
+  DateTime? _lastFetchAt;
+
   /// Zwraca mapę `symbol → cena PLN za jednostkę` dla podanych pozycji.
   /// Krypto: cena za 1 coin. Złoto/srebro: cena za 1 gram.
   Future<Map<String, double>> fetchPrices(List<Investment> items) async {
-    final result = <String, double>{};
-    if (items.isEmpty) return result;
+    if (items.isEmpty) return {};
 
+    // Świeże dane w cache → nie pukaj do API (ochrona przed 429).
+    final lastAt = _lastFetchAt;
+    if (lastAt != null &&
+        DateTime.now().difference(lastAt) < _cacheTtl &&
+        _lastPrices.isNotEmpty) {
+      return Map.of(_lastPrices);
+    }
+
+    final result = <String, double>{};
     final cryptoIds = items
         .where((i) => i.assetType == AssetType.crypto)
         .map((i) => i.symbol)
@@ -54,7 +69,14 @@ class PriceService {
       }),
     ];
     await Future.wait(futures);
-    return result;
+
+    // Świeże wartości nadpisują stare; brakujące (np. chwilowy 429)
+    // uzupełniamy ostatnio znanymi, żeby wartość nie skakała na zero.
+    if (result.isNotEmpty) {
+      _lastPrices.addAll(result);
+      _lastFetchAt = DateTime.now();
+    }
+    return Map.of(_lastPrices.isEmpty ? result : _lastPrices);
   }
 
   /// CoinGecko `/coins/markets` — ceny krypto w PLN. Jeden batch request.
@@ -148,6 +170,42 @@ class PriceService {
     } on Object {
       return null;
     }
+  }
+
+  /// Historyczny kurs średni waluty do PLN z konkretnego dnia (tabela A NBP).
+  /// NBP nie publikuje kursów w weekendy/święta → cofamy się do 7 dni wstecz
+  /// po ostatni opublikowany kurs. Gdy się nie uda → fallback na bieżący.
+  Future<double?> fxToPlnOnDate(String currencyCode, DateTime date) async {
+    final code = currencyCode.trim().toLowerCase();
+    if (code == 'pln') return 1;
+    // Dzień z przyszłości (lub dziś) — użyj bieżącego kursu.
+    final today = DateTime.now();
+    if (!date.isBefore(DateTime(today.year, today.month, today.day))) {
+      return fxToPln(code);
+    }
+    for (var back = 0; back < 8; back++) {
+      final d = date.subtract(Duration(days: back));
+      final ds = '${d.year.toString().padLeft(4, '0')}-'
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
+      try {
+        final uri = Uri.https(
+          'api.nbp.pl',
+          '/api/exchangerates/rates/a/$code/$ds',
+        );
+        final resp = await _client.get(uri).timeout(_timeout);
+        if (resp.statusCode == 404) continue; // brak notowania tego dnia
+        if (resp.statusCode != 200) break;
+        final json = jsonDecode(resp.body) as Map<String, dynamic>;
+        final rates = json['rates'] as List;
+        if (rates.isEmpty) continue;
+        return (rates.first as Map<String, dynamic>)['mid'] as double?;
+      } on Object {
+        break;
+      }
+    }
+    // Nie udało się historycznie — bierzemy bieżący kurs jako przybliżenie.
+    return fxToPln(code);
   }
 
   /// Wyszukiwarka krypto (CoinGecko `/search`). Zwraca top dopasowania.
