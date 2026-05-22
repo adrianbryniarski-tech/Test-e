@@ -34,8 +34,10 @@ const List<ChangelogEntry> kChangelog = [
           'początek zdania). Końcówka nagrania też nie jest już ucinana.',
       'Dodawanie głosem jest prostsze: stukasz mikrofon (nie trzeba już '
           'trzymać), a w okienku masz instrukcję i przykłady komend.',
-      'Płynność: komiksowe tło i gradienty są teraz zapamiętywane jako '
-          'gotowy obrazek, więc przewijanie nie przycina.',
+      'Dużo płynniej: naprawiony wyciek pamięci przy dodawaniu transakcji '
+          '(model głosu ładuje się raz, nie za każdym otwarciem), animowana '
+          'ramka przestała kręcić się w tle bez końca, a tło i kafelki są '
+          'lepiej odseparowane. Apka nie powinna już przycinać/wieszać się.',
       'Nowe wyglądy: Kredka (komiksowy — czarne kontury, kropkowy raster '
           'i twardy cień pod kartami), '
           'Plastelina i Aurora. Motywy różnią się teraz też kształtami '

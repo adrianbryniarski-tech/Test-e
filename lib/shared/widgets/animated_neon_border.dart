@@ -32,10 +32,14 @@ class _AnimatedNeonBorderState extends ConsumerState<AnimatedNeonBorder>
   @override
   void initState() {
     super.initState();
+    // UWAGA: NIE startujemy tu `repeat()`. Działający ticker zmusza apkę do
+    // renderowania ~60 fps bez końca (nigdy nie idle) — nawet na motywach
+    // bez neonu, gdzie nic tego nie rysuje. Start/stop steruje `build`
+    // zależnie od motywu.
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
-    )..repeat();
+    );
   }
 
   @override
@@ -47,7 +51,11 @@ class _AnimatedNeonBorderState extends ConsumerState<AnimatedNeonBorder>
   @override
   Widget build(BuildContext context) {
     final variant = ref.watch(themeVariantProvider);
-    if (!variant.hasNeonEffects) return widget.child;
+    if (!variant.hasNeonEffects) {
+      if (_controller.isAnimating) _controller.stop();
+      return widget.child;
+    }
+    if (!_controller.isAnimating) _controller.repeat();
 
     final scheme = Theme.of(context).colorScheme;
     final primary = scheme.primary;
