@@ -57,7 +57,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final householdAsync = ref.read(currentHouseholdIdProvider);
       final onOnboarding = location.startsWith('/onboarding');
 
-      if (householdAsync.isLoading) {
+      // Tylko PRAWDZIWE pierwsze ładowanie (brak jakiejkolwiek wartości) →
+      // ekran ładowania. Przy wznowieniu z tła provider jest unieważniany
+      // i chwilowo `isLoading`, ale Riverpod trzyma poprzednią wartość
+      // (`hasValue`). Bez tego warunku każdy powrót do apki wyrzucał z
+      // bieżącego ekranu (np. formularza inwestycji) na dashboard.
+      if (householdAsync.isLoading && !householdAsync.hasValue) {
         return isLoading ? null : '/loading';
       }
 
