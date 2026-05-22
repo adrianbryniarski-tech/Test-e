@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:nasz_budzet_domowy/core/supabase/supabase_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -59,7 +61,7 @@ class HouseholdRepository {
       );
       return result;
     } on PostgrestException catch (e) {
-      throw InvitationException(_mapInvitationError(e));
+      throw InvitationException(mapInvitationError(e));
     }
   }
 
@@ -142,7 +144,10 @@ class HouseholdRepository {
     return '${chars.sublist(0, 3).join()}-${chars.sublist(3).join()}';
   }
 
-  InvitationError _mapInvitationError(PostgrestException e) {
+  /// Mapuje kody błędów RPC `accept_invitation` na typed [InvitationError].
+  /// Publiczne wyłącznie dla testów.
+  @visibleForTesting
+  InvitationError mapInvitationError(PostgrestException e) {
     // Kody błędów ustawiane w RPC `accept_invitation` (migracja 0001).
     return switch (e.code) {
       'P0002' => InvitationError.notFound,
