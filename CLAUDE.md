@@ -9,6 +9,12 @@
   (np. „model głosu pobierasz w Ustawieniach"), popraw też odpowiednie
   kroki, nie tylko dodawaj nowe.
 
+- **Po każdej zmianie funkcji dopisz wpis „Co nowego".** Nowy
+  `ChangelogEntry` na górze listy w
+  `lib/features/onboarding/data/changelog.dart` — krótko, nietechnicznym
+  językiem (to czyta rodzina). Ustaw nowy unikalny `version`, żeby okienko
+  „Co nowego" pokazało się raz po aktualizacji.
+
 ## Przed zakończeniem zadania
 
 - `flutter analyze --no-pub` — czysto.

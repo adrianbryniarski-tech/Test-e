@@ -4,10 +4,12 @@ import 'package:nasz_budzet_domowy/features/budgets/presentation/budgets_screen.
 import 'package:nasz_budzet_domowy/features/categories/presentation/categories_screen.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:nasz_budzet_domowy/features/investments/presentation/investments_screen.dart';
+import 'package:nasz_budzet_domowy/features/onboarding/presentation/whats_new_screen.dart';
 import 'package:nasz_budzet_domowy/features/transactions/presentation/transactions_list_screen.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/brand_watermark.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/glowing_button.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/neon_gradient_background.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Główny shell apki z dolną nawigacją M3.
 /// Pięć zakładek: Dashboard, Transakcje, Budżety, Inwestycje, Kategorie.
@@ -22,6 +24,26 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
+
+  static const _seenChangelogKey = 'last_seen_changelog';
+
+  @override
+  void initState() {
+    super.initState();
+    // Po pierwszym narysowaniu pokaż „Co nowego" raz, jeśli wersja zmian
+    // jest nowsza niż ostatnio widziana.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowWhatsNew());
+  }
+
+  Future<void> _maybeShowWhatsNew() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    await showWhatsNewIfNeeded(
+      context,
+      seenVersion: prefs.getString(_seenChangelogKey),
+      onSeen: (version) => prefs.setString(_seenChangelogKey, version),
+    );
+  }
 
   static const _screens = [
     DashboardScreen(),
