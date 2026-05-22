@@ -26,6 +26,8 @@ dependencies:
   vosk_flutter_2: ^1.0.5
   # Rozpakowanie pobranego modelu Vosk (ZIP).
   archive: ^3.6.1
+  # Zgoda na mikrofon w czasie działania (Android wymaga runtime request).
+  permission_handler: ^11.3.1
 
   # Charts
   fl_chart: ^0.69.0

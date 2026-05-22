@@ -18,14 +18,19 @@ class NeonGradientBackground extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final variant = ref.watch(themeVariantProvider);
 
-    // Komiksowy raster kropek dla „Kredki".
+    // Komiksowy raster kropek dla „Kredki". RepaintBoundary + isComplex →
+    // Skia cache'uje raster i nie przerysowuje go przy każdej klatce treści
+    // (inaczej ~1500 kropek malowanych co scroll = zauważalne przycinanie).
     if (variant == AppThemeVariant.kredka) {
       final ink = Theme.of(context).colorScheme.onSurface;
       return Stack(
         children: [
           Positioned.fill(
-            child: CustomPaint(
-              painter: _HalftonePainter(ink.withValues(alpha: 0.06)),
+            child: RepaintBoundary(
+              child: CustomPaint(
+                painter: _HalftonePainter(ink.withValues(alpha: 0.06)),
+                isComplex: true,
+              ),
             ),
           ),
           child,
@@ -46,30 +51,36 @@ class NeonGradientBackground extends ConsumerWidget {
 
     return Stack(
       children: [
+        // Gradienty są statyczne — RepaintBoundary izoluje je od przerysowań
+        // treści (scroll/animacje), żeby nie malowały się co klatkę.
         Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(-0.8, -0.9),
-                radius: 1.3,
-                colors: [
-                  primary.withValues(alpha: alphaPrimary),
-                  Colors.transparent,
-                ],
+          child: RepaintBoundary(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(-0.8, -0.9),
+                  radius: 1.3,
+                  colors: [
+                    primary.withValues(alpha: alphaPrimary),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
         ),
         Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(0.9, 0.9),
-                radius: 1.3,
-                colors: [
-                  accent.withValues(alpha: alphaAccent),
-                  Colors.transparent,
-                ],
+          child: RepaintBoundary(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0.9, 0.9),
+                  radius: 1.3,
+                  colors: [
+                    accent.withValues(alpha: alphaAccent),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),

@@ -79,9 +79,12 @@ class HelpScreen extends StatelessWidget {
                   'model głosu (~50 MB) — jednorazowo, najlepiej przez Wi-Fi.',
               'Na ekranie dodawania transakcji stuknij ikonę mikrofonu '
                   '(prawy górny róg) — otworzy się okienko „Dodaj głosem".',
-              'Stuknij duży mikrofon, powiedz np. „50 zł Biedronka wczoraj", '
-                  'a potem stuknij ponownie, żeby zakończyć (nie trzeba '
-                  'trzymać).',
+              'Za pierwszym razem telefon zapyta o zgodę na mikrofon — '
+                  'pozwól. (Jeśli wcześniej odmówiłeś: w okienku jest przycisk '
+                  '„Otwórz ustawienia").',
+              'Stuknij duży mikrofon i POCZEKAJ, aż zniknie kółko ładowania '
+                  'i pojawi się „Słucham…" — dopiero wtedy mów (np. „50 zł '
+                  'Biedronka wczoraj"). Stuknij ponownie, żeby zakończyć.',
               'Co rozumie: kwotę, datę (dziś / wczoraj / „13 marca"), sklep '
                   'lub nazwę kategorii, oraz dochód (np. „pensja 5000").',
               'Apka wypełni pola — sprawdź i zapisz.',

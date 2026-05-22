@@ -223,6 +223,14 @@ class _VoiceSheetState extends State<_VoiceSheet> {
                     ?.copyWith(color: cs.onErrorContainer),
               ),
             ),
+            if (_service.micPermanentlyDenied) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _service.openSystemSettings,
+                icon: const Icon(Icons.settings),
+                label: const Text('Otwórz ustawienia'),
+              ),
+            ],
           ],
           const SizedBox(height: 24),
           Text('Przykłady', style: theme.textTheme.labelLarge),

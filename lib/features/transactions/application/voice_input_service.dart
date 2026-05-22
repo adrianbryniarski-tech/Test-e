@@ -5,6 +5,7 @@ import 'package:archive/archive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:vosk_flutter_2/vosk_flutter_2.dart';
 
 /// Status usługi rozpoznawania głosu.
@@ -66,6 +67,15 @@ class VoiceInputService extends ChangeNotifier {
   Model? _model;
   Recognizer? _recognizer;
   SpeechService? _speechService;
+  StreamSubscription<String>? _partialSub;
+
+  /// Czy użytkownik trwale odmówił zgody na mikrofon (wtedy trzeba go wysłać
+  /// do ustawień systemowych — `request()` już nic nie pokaże).
+  bool _micPermanentlyDenied = false;
+  bool get micPermanentlyDenied => _micPermanentlyDenied;
+
+  /// Otwiera ekran ustawień aplikacji (gdy zgoda trwale odmówiona).
+  Future<void> openSystemSettings() => openAppSettings();
 
   String? _partialTranscript;
   String? get partialTranscript => _partialTranscript;
@@ -186,27 +196,54 @@ class VoiceInputService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Prosi o zgodę na mikrofon (Android wymaga runtime request — sama
+  /// deklaracja w manifeście nie wystarcza). Zwraca true gdy przyznana.
+  Future<bool> _ensureMicPermission() async {
+    var status = await Permission.microphone.status;
+    if (status.isGranted) return true;
+    status = await Permission.microphone.request();
+    _micPermanentlyDenied = status.isPermanentlyDenied;
+    return status.isGranted;
+  }
+
   /// Rozpoczyna nagrywanie (push-to-talk).
   Future<void> startListening() async {
     if (_recognizer == null) return;
-    _status = VoiceStatus.listening;
     _partialTranscript = null;
     _lastError = null;
-    notifyListeners();
 
+    // 1. Zgoda na mikrofon — bez niej `start()` rzuca wyjątkiem.
+    if (!await _ensureMicPermission()) {
+      _lastError = _micPermanentlyDenied
+          ? 'Brak zgody na mikrofon. Włącz ją w ustawieniach telefonu '
+              '(stuknij „Otwórz ustawienia" poniżej) i spróbuj ponownie.'
+          : 'Aby dyktować, pozwól aplikacji używać mikrofonu.';
+      _status = VoiceStatus.ready;
+      notifyListeners();
+      return;
+    }
+
+    // 2. Uruchamiamy mikrofon. Status „processing" (spinner) — UI NIE pokazuje
+    //    jeszcze „Słucham…", żeby user nie zaczął mówić przed startem mikrofonu
+    //    (inaczej początek zdania ginie).
+    _status = VoiceStatus.processing;
+    notifyListeners();
     try {
       _speechService = await VoskFlutterPlugin.instance()
           .initSpeechService(_recognizer!);
-      await _speechService!.start();
-      _speechService!.onPartial().listen((partial) {
+      await _partialSub?.cancel();
+      _partialSub = _speechService!.onPartial().listen((partial) {
         _partialTranscript = partial;
         notifyListeners();
       });
+      await _speechService!.start();
+      // Dopiero teraz mikrofon faktycznie nagrywa.
+      _status = VoiceStatus.listening;
+      notifyListeners();
     } on Exception catch (e) {
       debugPrint('Vosk listen error: $e');
-      _lastError = 'Nie udało się włączyć mikrofonu. Sprawdź, czy aplikacja '
-          'ma zgodę na mikrofon (Ustawienia telefonu → Aplikacje → '
-          'uprawnienia).';
+      _lastError = 'Nie udało się włączyć mikrofonu. Zamknij inne aplikacje '
+          'używające mikrofonu i spróbuj ponownie.';
       _status = VoiceStatus.ready;
       notifyListeners();
     }
@@ -220,8 +257,10 @@ class VoiceInputService extends ChangeNotifier {
 
     try {
       await _speechService!.stop();
-      // Czekamy chwilę na finalny wynik.
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await _partialSub?.cancel();
+      _partialSub = null;
+      // Czekamy na flush ostatnich słów (za krótko = ucinało końcówkę).
+      await Future<void>.delayed(const Duration(milliseconds: 400));
       final result = await _recognizer!.getFinalResult();
       _speechService = null;
       _status = VoiceStatus.ready;
@@ -253,6 +292,7 @@ class VoiceInputService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _partialSub?.cancel();
     _speechService?.stop();
     _recognizer?.dispose();
     _model?.dispose();
