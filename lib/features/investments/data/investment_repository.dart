@@ -27,12 +27,46 @@ class InvestmentRepository {
         .map((rows) => rows.map(Investment.fromJson).toList());
   }
 
+  /// Dodaje pozycję. Jeśli to samo aktywo (asset_type + symbol) już jest w
+  /// portfelu — scala: nowa ilość = suma, nowa cena = średnia ważona w PLN,
+  /// data zakupu = wcześniejsza z dwóch. Dzięki temu kilka dokupień jednego
+  /// coina/metalu to jedna pozycja z uśrednioną ceną.
   Future<InvestmentWriteResult> insert(Investment inv) async {
     final user = supabase.auth.currentUser;
     if (user == null) {
       return const InvestmentWriteFailure('Brak sesji — zaloguj się.');
     }
     try {
+      final existingRow = await supabase
+          .from('investments')
+          .select()
+          .eq('household_id', inv.householdId)
+          .eq('asset_type', inv.assetType.toDbValue())
+          .eq('symbol', inv.symbol)
+          .maybeSingle();
+
+      if (existingRow != null) {
+        final ex = Investment.fromJson(existingRow);
+        final totalQty = ex.quantity + inv.quantity;
+        final avgCents = totalQty == 0
+            ? inv.buyPriceCents
+            : ((ex.quantity * ex.buyPriceCents +
+                        inv.quantity * inv.buyPriceCents) /
+                    totalQty)
+                .round();
+        final earliest = inv.purchasedAt.isBefore(ex.purchasedAt)
+            ? inv.purchasedAt
+            : ex.purchasedAt;
+        await supabase.from('investments').update({
+          'quantity': totalQty,
+          'buy_price_cents': avgCents,
+          'purchased_at': investmentDateOnly(earliest),
+          // Uzupełnij ticker jeśli stary wiersz go nie miał.
+          if (ex.ticker == null && inv.ticker != null) 'ticker': inv.ticker,
+        }).eq('id', ex.id);
+        return const InvestmentWriteSuccess();
+      }
+
       await supabase.from('investments').insert(inv.toInsert(user.id));
       return const InvestmentWriteSuccess();
     } on PostgrestException catch (e) {

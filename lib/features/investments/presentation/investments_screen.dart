@@ -362,6 +362,7 @@ class _ValuationTile extends ConsumerWidget {
       symbol: 'zł',
       decimalDigits: 2,
     );
+    final dateFmt = DateFormat('d.MM.yyyy', 'pl_PL');
     final qtyStr = inv.quantity == inv.quantity.roundToDouble()
         ? inv.quantity.toStringAsFixed(0)
         : inv.quantity.toString();
@@ -392,9 +393,18 @@ class _ValuationTile extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '$qtyStr ${inv.assetType.unitLabel(inv.symbol)}',
+                      '$qtyStr ${inv.unitLabel}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'po ${fmt.format(inv.buyPricePerUnitPln)} • '
+                      '${dateFmt.format(inv.purchasedAt)}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.8),
                       ),
                     ),
                   ],
