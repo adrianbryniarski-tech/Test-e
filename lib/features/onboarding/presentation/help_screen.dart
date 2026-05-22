@@ -55,6 +55,22 @@ class HelpScreen extends StatelessWidget {
             ],
           ),
           _HelpSection(
+            emoji: '📊',
+            title: 'Pulpit — co widać na głównym ekranie',
+            steps: [
+              'Pulpit to Wasz szybki podgląd pieniędzy w wybranym okresie.',
+              'Na górze wybierasz okres (ten miesiąc, 3 miesiące, rok…) — '
+                  'wszystkie wykresy dopasowują się do niego.',
+              'Saldo = dochody minus wydatki. Kolor/strzałka pokazuje, czy '
+                  'jest lepiej czy gorzej niż w poprzednim takim okresie.',
+              'Kółko (wykres kołowy) pokazuje, na co idą pieniądze wg '
+                  'kategorii. Wydatki podkategorii liczą się do kategorii '
+                  'głównej.',
+              'Słupki i linia pokazują wpływy/wydatki oraz jak rosło lub '
+                  'malało saldo w czasie.',
+            ],
+          ),
+          _HelpSection(
             emoji: '🎤',
             title: 'Jak dodać głosem',
             steps: [

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:nasz_budzet_domowy/core/supabase/supabase_client.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
@@ -111,11 +112,14 @@ class CategoryRepository {
       );
       return const CategoryWriteSuccess();
     } on PostgrestException catch (e) {
-      return CategoryWriteFailure(_humanizeRpcError(e));
+      return CategoryWriteFailure(humanizeRpcError(e));
     }
   }
 
-  String _humanizeRpcError(PostgrestException e) {
+  /// Tłumaczy kody błędów RPC `delete_category_with_reassign` na komunikaty
+  /// po polsku. Publiczne wyłącznie dla testów.
+  @visibleForTesting
+  String humanizeRpcError(PostgrestException e) {
     return switch (e.code) {
       'P0010' => 'Nie można usunąć kategorii systemowej.',
       'P0011' => 'Kategoria docelowa należy do innego gospodarstwa.',
