@@ -28,7 +28,17 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final data = widget.summary.expenseByCategoryId;
+    final catMap = {for (final c in widget.categories) c.id: c};
+
+    // Wydatki podkategorii doliczamy do kategorii głównej — jeden wycinek
+    // na rodzica (Auto = Paliwo + Serwis + …).
+    final raw = widget.summary.expenseByCategoryId;
+    final data = <String, int>{};
+    raw.forEach((categoryId, cents) {
+      final key = catMap[categoryId]?.parentId ?? categoryId;
+      data[key] = (data[key] ?? 0) + cents;
+    });
+
     if (data.isEmpty) {
       return BentoTile(
         title: 'Wydatki wg kategorii',
@@ -40,8 +50,6 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
         ),
       );
     }
-
-    final catMap = {for (final c in widget.categories) c.id: c};
     final sorted = data.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final total = sorted.fold<int>(0, (s, e) => s + e.value);

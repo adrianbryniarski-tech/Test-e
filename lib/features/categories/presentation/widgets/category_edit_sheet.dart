@@ -13,7 +13,7 @@ import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
 /// (`isSystem=true`) jest blokowana w UI — wywołanie z taką kategorią
 /// rzuca [ArgumentError].
 class CategoryEditSheet extends ConsumerStatefulWidget {
-  CategoryEditSheet({this.existing, super.key})
+  CategoryEditSheet({this.existing, this.initialParentId, super.key})
       : assert(
           existing?.isSystem != true,
           'Systemowe kategorie są read-only',
@@ -21,6 +21,10 @@ class CategoryEditSheet extends ConsumerStatefulWidget {
 
   /// `null` = tworzenie nowej. Inaczej edycja istniejącej.
   final Category? existing;
+
+  /// Gdy ustawione (i `existing == null`) → tworzymy podkategorię tego
+  /// rodzica; dziedziczymy jego typ/kolor/ikonę jako domyślne.
+  final String? initialParentId;
 
   @override
   ConsumerState<CategoryEditSheet> createState() => _CategoryEditSheetState();
@@ -31,6 +35,7 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
   late String _icon;
   late String _colorHex;
   late TransactionType _type;
+  String? _parentId;
   String? _error;
   bool _submitting = false;
 
@@ -38,10 +43,14 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
   void initState() {
     super.initState();
     final e = widget.existing;
+    final cats = ref.read(categoriesProvider).value ?? const <Category>[];
+    _parentId = e?.parentId ?? widget.initialParentId;
+    final parent =
+        cats.where((c) => c.id == _parentId).firstOrNull;
     _name = TextEditingController(text: e?.name ?? '');
-    _icon = e?.icon ?? 'shopping_cart';
-    _colorHex = e?.colorHex ?? '#7AB87A';
-    _type = e?.type ?? TransactionType.expense;
+    _icon = e?.icon ?? parent?.icon ?? 'shopping_cart';
+    _colorHex = e?.colorHex ?? parent?.colorHex ?? '#7AB87A';
+    _type = e?.type ?? parent?.type ?? TransactionType.expense;
   }
 
   @override
@@ -51,6 +60,16 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
   }
 
   bool get _isEdit => widget.existing != null;
+
+  /// Czy edytowana kategoria sama ma podkategorie (wtedy nie może stać się
+  /// podkategorią — jeden poziom zagnieżdżenia).
+  bool get _hasChildren {
+    if (!_isEdit) return false;
+    final cats = ref.read(categoriesProvider).value ?? const <Category>[];
+    return cats.any((c) => c.parentId == widget.existing!.id);
+  }
+
+  String? get _effectiveParentId => _hasChildren ? null : _parentId;
 
   Future<void> _submit() async {
     final name = _name.text.trim();
@@ -77,6 +96,7 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
         icon: _icon,
         colorHex: _colorHex,
         type: _type,
+        parentId: _effectiveParentId,
       );
     } else {
       final householdId = ref.read(currentHouseholdIdProvider).value;
@@ -93,6 +113,7 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
         icon: _icon,
         colorHex: _colorHex,
         type: _type,
+        parentId: _effectiveParentId,
       );
     }
 
@@ -116,6 +137,21 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final allCats = ref.watch(categoriesProvider).value ?? const <Category>[];
+    final hasChildren = _hasChildren;
+    final parentCandidates = allCats
+        .where(
+          (c) =>
+              c.type == _type &&
+              c.parentId == null &&
+              c.id != widget.existing?.id,
+        )
+        .toList()
+      ..sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+    final parentValue =
+        parentCandidates.any((c) => c.id == _parentId) ? _parentId : null;
     final previewCategory = Category(
       id: 'preview',
       householdId: 'preview',
@@ -185,8 +221,58 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
                 ),
               ],
               selected: {_type},
-              onSelectionChanged: (s) => setState(() => _type = s.first),
+              onSelectionChanged: (s) => setState(() {
+                _type = s.first;
+                // Rodzic musi być tego samego typu — wyczyść jeśli już nie
+                // pasuje.
+                final p = allCats.where((c) => c.id == _parentId).firstOrNull;
+                if (p != null && p.type != _type) _parentId = null;
+              }),
             ),
+            const SizedBox(height: 16),
+            if (hasChildren)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  'Ta kategoria ma podkategorie, więc pozostaje kategorią '
+                  'główną.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              DropdownButtonFormField<String?>(
+                key: ValueKey('parent-$_type'),
+                initialValue: parentValue,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Kategoria nadrzędna (opcjonalnie)',
+                  prefixIcon: Icon(Icons.account_tree_outlined),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    child: Text('— Brak (kategoria główna)'),
+                  ),
+                  for (final c in parentCandidates)
+                    DropdownMenuItem<String?>(
+                      value: c.id,
+                      child: Row(
+                        children: [
+                          CategoryAvatar(category: c, size: 24),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              c.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+                onChanged: (id) => setState(() => _parentId = id),
+              ),
             const SizedBox(height: 20),
             Text('Kolor', style: theme.textTheme.labelLarge),
             const SizedBox(height: 12),
