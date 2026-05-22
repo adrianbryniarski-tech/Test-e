@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/voice_input_service.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/voice_parser.dart';
@@ -75,12 +76,12 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
     final status = _service.status;
 
     if (status == VoiceStatus.unavailable) {
-      return const Tooltip(
-        message: 'Model głosu niegotowy — pobierz w Ustawieniach',
-        child: IconButton.outlined(
-          onPressed: null,
-          icon: Icon(Icons.mic_off_outlined),
-        ),
+      // Klikalny skrót: model niegotowy → przejdź od razu do Ustawień,
+      // gdzie można go pobrać.
+      return IconButton.outlined(
+        tooltip: 'Model głosu niegotowy — stuknij, aby pobrać w Ustawieniach',
+        onPressed: () => context.push('/settings'),
+        icon: const Icon(Icons.mic_off_outlined),
       );
     }
 
