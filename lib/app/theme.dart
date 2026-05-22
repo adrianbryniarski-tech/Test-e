@@ -47,6 +47,24 @@ enum AppThemeVariant {
     description:
         'Deep space purple/indigo + neonowe gwiazdy. Głęboka czerń OLED '
         'z fioletowymi akcentami.',
+  ),
+  kredka(
+    label: 'Kredka',
+    description:
+        'Kreskówka: grube kontury, soczyste kolory, zaokrąglona czcionka. '
+        'Zabawowy neubrutalism.',
+  ),
+  plastelina(
+    label: 'Plastelina',
+    description:
+        'Miękkie, puszyste karty jak z gliny (claymorphism). Ciepłe '
+        'pastele, delikatne cienie.',
+  ),
+  aurora(
+    label: 'Aurora',
+    description:
+        'Minimal premium: dużo bieli/czerni, wielka typografia, jeden '
+        'żywy akcent. Czysto i nowocześnie.',
   );
 
   const AppThemeVariant({required this.label, required this.description});
@@ -71,7 +89,7 @@ enum AppThemeVariant {
       };
 }
 
-/// Builder ThemeData dla wszystkich wariantów. Wybiera między 5 stylami
+/// Builder ThemeData dla wszystkich wariantów [AppThemeVariant]
 /// + jasny/ciemny tryb.
 class AppTheme {
   const AppTheme._();
@@ -101,6 +119,11 @@ class AppTheme {
     final textTheme = _textThemeFor(base.textTheme, variant);
     final borderRadius = _borderRadiusFor(variant);
 
+    // Kontur kart/pól — tylko motywy z `cardBorder` (Kredka). Reszta: brak.
+    final borderSide = spec.cardBorder != null
+        ? BorderSide(color: spec.cardBorder!, width: spec.cardBorderWidth)
+        : BorderSide.none;
+
     return base.copyWith(
       colorScheme: colorScheme,
       scaffoldBackgroundColor: spec.background,
@@ -112,6 +135,7 @@ class AppTheme {
             spec.cardElevation > 0 ? colorScheme.shadow : Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
+          side: borderSide,
         ),
         margin: EdgeInsets.zero,
       ),
@@ -140,11 +164,11 @@ class AppTheme {
         fillColor: spec.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius * 0.7),
-          borderSide: BorderSide.none,
+          borderSide: borderSide,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius * 0.7),
-          borderSide: BorderSide.none,
+          borderSide: borderSide,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius * 0.7),
@@ -230,6 +254,39 @@ class AppTheme {
           surface: isDark ? const Color(0xFF120829) : const Color(0xFFEAE0FF),
           cardElevation: isDark ? 0 : 1,
         ),
+
+      // Kreskówka / neubrutalism — soczysty pomarańcz na kremowym tle,
+      // grube kontury kart i pól, zero cieni. Czcionka Fredoka (zaokrąglona).
+      AppThemeVariant.kredka => _ThemeSpec(
+          seed: isDark ? const Color(0xFFFF8A4C) : const Color(0xFFFF5C2B),
+          background:
+              isDark ? const Color(0xFF1A1410) : const Color(0xFFFFF6E9),
+          surface: isDark ? const Color(0xFF241B14) : const Color(0xFFFFFFFF),
+          cardElevation: 0,
+          cardBorder:
+              isDark ? const Color(0xFFFFE0C2) : const Color(0xFF231A12),
+          cardBorderWidth: 2.5,
+        ),
+
+      // Claymorphism — miękki fiolet, puszyste karty (elevation = miękki
+      // cień), bardzo duże zaokrąglenia, ciepłe pastelowe tło.
+      AppThemeVariant.plastelina => _ThemeSpec(
+          seed: isDark ? const Color(0xFFB3A8FF) : const Color(0xFF8B7CF6),
+          background:
+              isDark ? const Color(0xFF15131F) : const Color(0xFFF3F0FA),
+          surface: isDark ? const Color(0xFF221E30) : const Color(0xFFFBFAFF),
+          cardElevation: 3,
+        ),
+
+      // Aurora — minimal premium: prawie biel / prawie czerń, mocny indygo
+      // akcent, brak cieni i konturów, duży oddech.
+      AppThemeVariant.aurora => _ThemeSpec(
+          seed: isDark ? const Color(0xFF8B82FF) : const Color(0xFF4F46E5),
+          background:
+              isDark ? const Color(0xFF08080F) : const Color(0xFFFAFAFD),
+          surface: isDark ? const Color(0xFF14141F) : const Color(0xFFFFFFFF),
+          cardElevation: 0,
+        ),
     };
   }
 
@@ -243,6 +300,9 @@ class AppTheme {
       AppThemeVariant.cyber => 8, // ostry, terminal-like
       AppThemeVariant.synthwave => 16,
       AppThemeVariant.galaktyka => 24,
+      AppThemeVariant.kredka => 16, // pyzate, ale nie owalne
+      AppThemeVariant.plastelina => 30, // mocno zaokrąglone, „z gliny"
+      AppThemeVariant.aurora => 20,
     };
   }
 
@@ -279,6 +339,25 @@ class AppTheme {
       );
     }
 
+    // Kredka — zaokrąglona czcionka Fredoka na całej typografii + grube wagi
+    // dla „bajkowego" charakteru.
+    if (variant == AppThemeVariant.kredka) {
+      final fredoka = common.apply(fontFamily: 'Fredoka');
+      return fredoka.copyWith(
+        displayLarge: fredoka.displayLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.5,
+        ),
+        displayMedium: fredoka.displayMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
+        ),
+        headlineMedium:
+            fredoka.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
+        titleLarge: fredoka.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+      );
+    }
+
     // Cyber — szerokie letter-spacing dla "terminal" feel.
     if (variant == AppThemeVariant.cyber) {
       return common.copyWith(
@@ -303,12 +382,18 @@ class _ThemeSpec {
     required this.background,
     required this.surface,
     required this.cardElevation,
+    this.cardBorder,
+    this.cardBorderWidth = 0,
   });
 
   final Color seed;
   final Color background;
   final Color surface;
   final double cardElevation;
+
+  /// Widoczny kontur kart i pól (motyw „Kredka"). `null` = brak konturu.
+  final Color? cardBorder;
+  final double cardBorderWidth;
 }
 
 /// Paleta 12 odcieni dla kategorii (spójna z seedem migracji SQL).

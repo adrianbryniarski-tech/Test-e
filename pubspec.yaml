@@ -53,10 +53,6 @@ dependencies:
   # Notyfikacje lokalne (v4, ale w pubspec od początku)
   flutter_local_notifications: ^18.0.1
 
-  # CSV (v2)
-  csv: ^6.0.0
-  charset_converter: ^2.2.0
-
   # UI utility
   cupertino_icons: ^1.0.8
   collection: ^1.18.0
@@ -87,3 +83,9 @@ flutter:
   assets:
     - assets/icons/
     - assets/sounds/
+  fonts:
+    # Zaokrąglona czcionka dla motywu „Kredka" (OFL 1.1, plik wariantowy
+    # z wagami Light–Bold). Reszta motywów używa domyślnej czcionki.
+    - family: Fredoka
+      fonts:
+        - asset: assets/fonts/Fredoka.ttf
