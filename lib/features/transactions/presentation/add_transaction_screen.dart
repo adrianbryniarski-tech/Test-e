@@ -357,12 +357,17 @@ class _CategoryPickerField extends StatelessWidget {
         child: Text('Błąd: $e'),
       ),
       data: (_) {
+        // Zaznaczona wartość MUSI być dokładnie jednym z elementów listy —
+        // inaczej DropdownButton rzuca asercję. Wyznaczamy ją z aktualnej
+        // listy po `id` (gdy kategorii już nie ma / zła dla typu → null).
+        final value =
+            items.where((c) => c.id == selected?.id).firstOrNull;
         return DropdownButtonFormField<Category>(
           // `key` per typ wymusza rebuild dropdownu gdy user przełączy
           // wydatek↔dochód — inaczej wewnętrzny stan FormField może
           // zostać przy starej kategorii (poprzedniego typu).
           key: ValueKey(items.firstOrNull?.type),
-          initialValue: selected,
+          initialValue: value,
           isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Kategoria',
