@@ -31,8 +31,9 @@ const List<ChangelogEntry> kChangelog = [
     changes: [
       'Dodawanie głosem jest prostsze: stukasz mikrofon (nie trzeba już '
           'trzymać), a w okienku masz instrukcję i przykłady komend.',
-      'Trzy nowe wyglądy aplikacji: Kredka (kreskówka), Plastelina i Aurora '
-          '— wybierzesz je w Ustawieniach → Motyw.',
+      'Nowe wyglądy: Kredka (komiksowy — czarne kontury i kropkowy raster), '
+          'Plastelina i Aurora. Motywy różnią się teraz też kształtami '
+          'przycisków i kart, nie tylko kolorem. Wybierzesz w Ustawieniach.',
       'Podkategorie: pod kategorią główną (np. „Transport") możesz mieć '
           'podkategorie (np. „Paliwo"). Na wykresie liczą się do głównej.',
       'Nowy ekran „Co nowego" — tutaj po każdej aktualizacji zobaczysz '

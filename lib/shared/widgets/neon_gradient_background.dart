@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 
-/// Owija child w subtelny gradient tła (radial w lewym górnym rogu,
-/// drugi w prawym dolnym). Aktywuje się TYLKO dla motywów neon
-/// (cyber/synthwave/galaktyka) — dla pozostałych zwraca child bez
-/// modyfikacji (zero overhead).
+/// Owija child w tło zależne od motywu:
+/// - neon (cyber/synthwave/galaktyka) → subtelny podwójny radial gradient,
+/// - Kredka → komiksowy raster kropek (halftone) na całej apce,
+/// - pozostałe → child bez zmian (zero overhead).
 ///
-/// Użyć w głównym body Scaffold'a żeby cała apka miała "głębię".
+/// Użyć w głównym body Scaffold'a żeby cała apka miała spójny charakter.
 class NeonGradientBackground extends ConsumerWidget {
   const NeonGradientBackground({required this.child, super.key});
 
@@ -16,6 +17,22 @@ class NeonGradientBackground extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final variant = ref.watch(themeVariantProvider);
+
+    // Komiksowy raster kropek dla „Kredki".
+    if (variant == AppThemeVariant.kredka) {
+      final ink = Theme.of(context).colorScheme.onSurface;
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _HalftonePainter(ink.withValues(alpha: 0.06)),
+            ),
+          ),
+          child,
+        ],
+      );
+    }
+
     if (!variant.hasNeonEffects) return child;
 
     final scheme = Theme.of(context).colorScheme;
@@ -61,4 +78,27 @@ class NeonGradientBackground extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Rysuje równomierną siatkę kropek (efekt komiksowego rastra/halftone).
+class _HalftonePainter extends CustomPainter {
+  _HalftonePainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    const gap = 16.0;
+    const radius = 1.4;
+    for (var y = 0.0; y < size.height; y += gap) {
+      for (var x = 0.0; x < size.width; x += gap) {
+        canvas.drawCircle(Offset(x, y), radius, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_HalftonePainter oldDelegate) =>
+      oldDelegate.color != color;
 }
