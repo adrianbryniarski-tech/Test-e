@@ -23,6 +23,8 @@ class BrandWatermark extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : const Color(0xFF1A2B4A);
 
+    final isEmblem = variant == AppThemeVariant.dragonBall ||
+        variant == AppThemeVariant.pokemon;
     final logo = switch (variant) {
       AppThemeVariant.dragonBall => const _ThemeEmblem(_EmblemKind.dragonBall),
       AppThemeVariant.pokemon => const _ThemeEmblem(_EmblemKind.pokeball),
@@ -38,14 +40,15 @@ class BrandWatermark extends ConsumerWidget {
       left: 16,
       bottom: 12,
       child: IgnorePointer(
-        child: Opacity(
-          opacity: 0.4,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              logo,
-              const SizedBox(height: 1),
-              Text(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Emblemat anime wyraźny (0.9), zwykły watermark subtelny (0.4).
+            Opacity(opacity: isEmblem ? 0.9 : 0.4, child: logo),
+            const SizedBox(height: 1),
+            Opacity(
+              opacity: 0.4,
+              child: Text(
                 'made by AB Corporation',
                 style: TextStyle(
                   color: textColor,
@@ -54,8 +57,8 @@ class BrandWatermark extends ConsumerWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -74,8 +77,8 @@ class _ThemeEmblem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 44,
-      height: 44,
+      width: 56,
+      height: 56,
       child: CustomPaint(painter: _EmblemPainter(kind)),
     );
   }
@@ -99,81 +102,46 @@ class _EmblemPainter extends CustomPainter {
   }
 
   void _paintDragonBall(Canvas canvas, Offset c, double r) {
-    final ballR = r * 0.72;
-    final ballRect = Rect.fromCircle(center: c, radius: ballR);
-
-    // Aura energii (złoty blask zanikający na zewnątrz).
+    final rect = Rect.fromCircle(center: c, radius: r);
+    // Szklista pomarańczowa kula — gradient 3D (jasny lewy-górny → ciemny dół).
     canvas.drawCircle(
       c,
       r,
       Paint()
         ..shader = const RadialGradient(
-          colors: [Color(0x55FFC107), Color(0x00FFC107)],
-        ).createShader(Rect.fromCircle(center: c, radius: r)),
+          center: Alignment(-0.35, -0.4),
+          radius: 1.05,
+          colors: [Color(0xFFFFE3A8), Color(0xFFF7A93B), Color(0xFFDD7B14)],
+          stops: [0.0, 0.5, 1.0],
+        ).createShader(rect),
     );
-
-    // Iskry ki dookoła kuli (na przemian długie/krótkie).
-    final spark = Paint()
-      ..color = const Color(0xFFFFD24D)
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-    for (var i = 0; i < 8; i++) {
-      final a = i * math.pi / 4;
-      final inner = ballR * 1.06;
-      final outer = i.isEven ? r * 0.99 : ballR * 1.32;
-      canvas.drawLine(
-        Offset(c.dx + inner * math.cos(a), c.dy + inner * math.sin(a)),
-        Offset(c.dx + outer * math.cos(a), c.dy + outer * math.sin(a)),
-        spark,
-      );
-    }
-
-    // Kula z cieniowaniem 3D, połyskiem i obrysem.
-    canvas
-      ..drawCircle(
-        c,
-        ballR,
-        Paint()
-          ..shader = const RadialGradient(
-            center: Alignment(-0.4, -0.4),
-            radius: 1.1,
-            colors: [Color(0xFFFFD98A), Color(0xFFF2A33C), Color(0xFFD9740F)],
-            stops: [0.0, 0.55, 1.0],
-          ).createShader(ballRect),
-      )
-      ..drawCircle(
-        Offset(c.dx - ballR * 0.32, c.dy - ballR * 0.36),
-        ballR * 0.26,
-        Paint()..color = const Color(0x88FFFFFF),
-      )
-      ..drawCircle(
-        c,
-        ballR,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.4
-          ..color = const Color(0xFFC85A12),
-      );
-
-    // Cztery czerwone gwiazdki z cienkim obrysem (lepszy kontrast).
-    final starFill = Paint()..color = const Color(0xFFE53935);
-    final starLine = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8
-      ..color = const Color(0xFF8E1B1B);
-    final d = ballR * 0.4;
-    final sr = ballR * 0.24;
+    // Cztery czerwone gwiazdki (układ 2×2) — jak w 4-gwiazdkowej kuli.
+    final star = Paint()..color = const Color(0xFFE12B1E);
+    final d = r * 0.34;
+    final sr = r * 0.2;
     for (final o in [
       Offset(c.dx - d, c.dy - d),
       Offset(c.dx + d, c.dy - d),
       Offset(c.dx - d, c.dy + d),
       Offset(c.dx + d, c.dy + d),
     ]) {
-      final p = _starPath(o, sr);
-      canvas
-        ..drawPath(p, starFill)
-        ..drawPath(p, starLine);
+      canvas.drawPath(_starPath(o, sr), star);
     }
+    // Połysk w lewym-górnym + cienki ciepły obrys.
+    canvas
+      ..drawCircle(
+        Offset(c.dx - r * 0.5, c.dy - r * 0.54),
+        r * 0.15,
+        Paint()..color = const Color(0x99FFFFFF),
+      )
+      ..drawCircle(
+        c,
+        r,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..color = const Color(0xFFBE5E0E),
+      );
   }
 
   void _paintPokeball(Canvas canvas, Offset c, double r) {
