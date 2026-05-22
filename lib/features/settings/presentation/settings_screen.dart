@@ -186,6 +186,18 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Card(
+            child: ListTile(
+              leading: const Icon(Icons.auto_awesome_outlined),
+              title: const Text('Co nowego'),
+              subtitle: const Text(
+                'Co się zmieniło w ostatnich aktualizacjach.',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/whats-new'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(

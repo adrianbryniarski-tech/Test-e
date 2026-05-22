@@ -14,6 +14,7 @@ import 'package:nasz_budzet_domowy/features/household/presentation/onboarding_ch
 import 'package:nasz_budzet_domowy/features/investments/data/investment.dart';
 import 'package:nasz_budzet_domowy/features/investments/presentation/add_investment_screen.dart';
 import 'package:nasz_budzet_domowy/features/onboarding/presentation/help_screen.dart';
+import 'package:nasz_budzet_domowy/features/onboarding/presentation/whats_new_screen.dart';
 import 'package:nasz_budzet_domowy/features/settings/presentation/settings_screen.dart';
 import 'package:nasz_budzet_domowy/features/transactions/presentation/add_transaction_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -133,6 +134,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/help',
         builder: (context, state) => const HelpScreen(),
+      ),
+      GoRoute(
+        path: '/whats-new',
+        builder: (context, state) => const WhatsNewScreen(),
       ),
     ],
   );
