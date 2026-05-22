@@ -58,10 +58,10 @@ class HelpScreen extends StatelessWidget {
             emoji: '🎤',
             title: 'Jak dodać głosem',
             steps: [
-              'Na ekranie dodawania transakcji stuknij ikonę mikrofonu '
-                  '(prawy górny róg).',
-              'Za pierwszym razem apka pobierze model głosu (~50 MB) — '
-                  'jednorazowo.',
+              'Najpierw w Ustawieniach → „Sterowanie głosem" pobierz '
+                  'model głosu (~50 MB) — jednorazowo, najlepiej przez Wi-Fi.',
+              'Potem na ekranie dodawania transakcji stuknij ikonę '
+                  'mikrofonu (prawy górny róg).',
               'Przytrzymaj i powiedz np. „pięćdziesiąt złotych Biedronka '
                   'wczoraj".',
               'Apka sama wypełni kwotę, kategorię i datę — sprawdź '

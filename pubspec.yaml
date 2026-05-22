@@ -24,6 +24,8 @@ dependencies:
 
   # Voice input — offline ASR przez Vosk
   vosk_flutter_2: ^1.0.5
+  # Rozpakowanie pobranego modelu Vosk (ZIP).
+  archive: ^3.6.1
 
   # Charts
   fl_chart: ^0.69.0

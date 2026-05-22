@@ -7,6 +7,7 @@ import 'package:nasz_budzet_domowy/features/animations/application/animation_set
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
+import 'package:nasz_budzet_domowy/features/transactions/application/voice_input_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -145,6 +146,24 @@ class SettingsScreen extends ConsumerWidget {
           ...AppAnimation.values.map(
             (a) => _AnimationTile(animation: a),
           ),
+          const SizedBox(height: 32),
+          Text(
+            'Sterowanie głosem',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Dyktowanie wydatków działa offline dzięki polskiemu modelowi '
+            'Vosk (~50 MB). Pobierz go raz — potem mikrofon na ekranie nowej '
+            'transakcji będzie aktywny.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const _VoiceModelCard(),
           const SizedBox(height: 32),
           Text(
             'Info',
@@ -589,6 +608,129 @@ class _HouseholdInfoCard extends ConsumerWidget {
             },
           ),
       ],
+    );
+  }
+}
+
+/// Karta pobierania/statusu modelu głosowego Vosk. Słucha singletona
+/// [VoiceInputService] (ChangeNotifier, nie Riverpod) i pokazuje postęp.
+class _VoiceModelCard extends StatefulWidget {
+  const _VoiceModelCard();
+
+  @override
+  State<_VoiceModelCard> createState() => _VoiceModelCardState();
+}
+
+class _VoiceModelCardState extends State<_VoiceModelCard> {
+  final _service = VoiceInputService.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    // Odśwież status (model mógł zostać pobrany wcześniej).
+    _service
+      ..addListener(_rebuild)
+      ..init();
+  }
+
+  @override
+  void dispose() {
+    _service.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final status = _service.status;
+
+    if (status == VoiceStatus.ready) {
+      return Card(
+        child: ListTile(
+          leading: Icon(Icons.check_circle, color: cs.primary),
+          title: const Text('Model gotowy'),
+          subtitle: const Text(
+            'Mikrofon na ekranie nowej transakcji jest aktywny.',
+          ),
+        ),
+      );
+    }
+
+    if (_service.isDownloading || status == VoiceStatus.loading) {
+      final progress = _service.downloadProgress;
+      final isExtracting = status == VoiceStatus.loading || progress == 1;
+      final label = isExtracting
+          ? 'Rozpakowywanie i ładowanie…'
+          : progress == null
+              ? 'Pobieranie…'
+              : 'Pobieranie… ${(progress * 100).round()}%';
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: theme.textTheme.bodyMedium),
+              const SizedBox(height: 12),
+              LinearProgressIndicator(
+                value: isExtracting ? null : progress,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // unavailable — przycisk pobierania (+ ewentualny błąd).
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_service.downloadError != null) ...[
+              Row(
+                children: [
+                  Icon(Icons.error_outline, color: cs.error, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _service.downloadError!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+            FilledButton.icon(
+              onPressed: _service.downloadModel,
+              icon: const Icon(Icons.download),
+              label: Text(
+                _service.downloadError != null
+                    ? 'Spróbuj ponownie'
+                    : 'Pobierz model głosowy (~50 MB)',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Pobieranie tylko przez Wi-Fi zalecane. Model zostaje na '
+              'telefonie — działa bez internetu.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
