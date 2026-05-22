@@ -31,7 +31,8 @@ const List<ChangelogEntry> kChangelog = [
     changes: [
       'Dodawanie głosem jest prostsze: stukasz mikrofon (nie trzeba już '
           'trzymać), a w okienku masz instrukcję i przykłady komend.',
-      'Nowe wyglądy: Kredka (komiksowy — czarne kontury i kropkowy raster), '
+      'Nowe wyglądy: Kredka (komiksowy — czarne kontury, kropkowy raster '
+          'i twardy cień pod kartami), '
           'Plastelina i Aurora. Motywy różnią się teraz też kształtami '
           'przycisków i kart, nie tylko kolorem. Wybierzesz w Ustawieniach.',
       'Dwa motywy dla fanów anime: „Dragon Ball" (pomarańcz i energia, smocza '

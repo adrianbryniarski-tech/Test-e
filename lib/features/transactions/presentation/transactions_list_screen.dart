@@ -9,6 +9,7 @@ import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 
 /// Lista transakcji bieżącego gospodarstwa.
 /// Renderuje się jako CustomScrollView (bez własnego Scaffold) —
@@ -230,18 +231,20 @@ class _DateGroup extends StatelessWidget {
               ),
             ),
           ),
-          Card(
-            child: Column(
-              children: [
-                for (final t in transactions)
-                  _DismissibleTransactionRow(
-                    transaction: t,
-                    category: categoriesById[t.categoryId],
-                    isLast: t == transactions.last,
-                    onDeleteLocally: onDeleteLocally,
-                    onDeleteFailed: onDeleteFailed,
-                  ),
-              ],
+          ComicShadow(
+            child: Card(
+              child: Column(
+                children: [
+                  for (final t in transactions)
+                    _DismissibleTransactionRow(
+                      transaction: t,
+                      category: categoriesById[t.categoryId],
+                      isLast: t == transactions.last,
+                      onDeleteLocally: onDeleteLocally,
+                      onDeleteFailed: onDeleteFailed,
+                    ),
+                ],
+              ),
             ),
           ),
         ],
@@ -337,8 +340,7 @@ class _DismissibleTransactionRow extends ConsumerWidget {
   Future<bool> _confirm(BuildContext context) async {
     final amount = (transaction.amountCents / 100).toStringAsFixed(2);
     final sign = transaction.type == TransactionType.income ? '+' : '−';
-    final hasDescription =
-        transaction.description?.trim().isNotEmpty ?? false;
+    final hasDescription = transaction.description?.trim().isNotEmpty ?? false;
     final label = hasDescription
         ? transaction.description!.trim()
         : (category?.name ?? 'transakcja');
