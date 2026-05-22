@@ -29,49 +29,53 @@ class BentoTile extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final isKredka = ref.watch(themeVariantProvider) == AppThemeVariant.kredka;
-    return ComicShadow(
-      borderRadius: 20,
-      child: Card(
-        elevation: 0,
-        color: cs.surfaceContainerHigh,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: isKredka
-              ? BorderSide(
-                  color: kredkaInk(Theme.of(context).brightness),
-                  width: 2.5,
-                )
-              : BorderSide.none,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: tt.labelLarge?.copyWith(
-                          color: cs.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
+    // RepaintBoundary: każdy kafelek (często z wykresem) maluje się osobno,
+    // więc przerysowanie jednego nie odświeża pozostałych.
+    return RepaintBoundary(
+      child: ComicShadow(
+        borderRadius: 20,
+        child: Card(
+          elevation: 0,
+          color: cs.surfaceContainerHigh,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: isKredka
+                ? BorderSide(
+                    color: kredkaInk(Theme.of(context).brightness),
+                    width: 2.5,
+                  )
+                : BorderSide.none,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: tt.labelLarge?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                    if (trailing != null) trailing!,
-                  ],
+                      if (trailing != null) trailing!,
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: padding,
-                  child: child,
+                Expanded(
+                  child: Padding(
+                    padding: padding,
+                    child: child,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

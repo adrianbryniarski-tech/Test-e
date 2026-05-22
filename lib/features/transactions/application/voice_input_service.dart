@@ -100,6 +100,11 @@ class VoiceInputService extends ChangeNotifier {
   Future<bool> isModelDownloaded() async => (await _modelDir()).existsSync();
 
   Future<void> init() async {
+    // Model ładujemy TYLKO raz. Wcześniej `init()` (wołany z initState przy
+    // każdym otwarciu ekranu „Nowa transakcja") tworzył model od nowa —
+    // ~50 MB za każdym razem, bez zwalniania starego = wyciek pamięci i
+    // narastające zacięcia. Gdy już gotowy/ładuje się — nic nie robimy.
+    if (_status != VoiceStatus.unavailable) return;
     final dir = await _modelDir();
     if (!dir.existsSync()) {
       _status = VoiceStatus.unavailable;
@@ -131,8 +136,7 @@ class VoiceInputService extends ChangeNotifier {
 
       // Strumieniujemy do pliku, żeby nie trzymać 50 MB w pamięci.
       client = http.Client();
-      final resp =
-          await client.send(http.Request('GET', Uri.parse(modelUrl)));
+      final resp = await client.send(http.Request('GET', Uri.parse(modelUrl)));
       if (resp.statusCode != 200) {
         throw HttpException('Serwer zwrócił HTTP ${resp.statusCode}');
       }
@@ -185,6 +189,10 @@ class VoiceInputService extends ChangeNotifier {
     _status = VoiceStatus.loading;
     notifyListeners();
     try {
+      // Zwolnij ewentualny poprzedni model (np. po ponownym pobraniu),
+      // żeby nie trzymać dwóch w pamięci.
+      await _recognizer?.dispose();
+      _model?.dispose();
       _model = await VoskFlutterPlugin.instance().createModel(path);
       _recognizer = await VoskFlutterPlugin.instance()
           .createRecognizer(model: _model!, sampleRate: 16000);
@@ -229,8 +237,8 @@ class VoiceInputService extends ChangeNotifier {
     _status = VoiceStatus.processing;
     notifyListeners();
     try {
-      _speechService = await VoskFlutterPlugin.instance()
-          .initSpeechService(_recognizer!);
+      _speechService =
+          await VoskFlutterPlugin.instance().initSpeechService(_recognizer!);
       await _partialSub?.cancel();
       _partialSub = _speechService!.onPartial().listen((partial) {
         _partialTranscript = partial;
