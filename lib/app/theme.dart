@@ -123,6 +123,22 @@ class AppTheme {
     final borderSide = spec.cardBorder != null
         ? BorderSide(color: spec.cardBorder!, width: spec.cardBorderWidth)
         : BorderSide.none;
+    final isKredka = variant == AppThemeVariant.kredka;
+
+    // Kształt przycisków zależny od motywu — żeby motywy różniły się nie
+    // tylko kolorem: pigułka (clay), ostre prostokąty (mono/cyber/terminal),
+    // zaokrąglone (reszta). Kredka dokłada gruby czarny obrys.
+    final buttonShape = switch (variant) {
+      AppThemeVariant.plastelina => StadiumBorder(side: borderSide),
+      AppThemeVariant.mono || AppThemeVariant.cyber => RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(2),
+          side: borderSide,
+        ),
+      _ => RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius * 0.8),
+          side: borderSide,
+        ),
+    };
 
     return base.copyWith(
       colorScheme: colorScheme,
@@ -150,13 +166,18 @@ class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size(0, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius * 0.8),
-          ),
-          textStyle: const TextStyle(
+          shape: buttonShape,
+          textStyle: TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: isKredka ? FontWeight.w700 : FontWeight.w600,
           ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 52),
+          shape: buttonShape,
+          side: isKredka ? borderSide : null,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -179,7 +200,9 @@ class AppTheme {
         backgroundColor: spec.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius * 1.2),
-          side: BorderSide(color: colorScheme.outlineVariant),
+          side: isKredka
+              ? borderSide
+              : BorderSide(color: colorScheme.outlineVariant),
         ),
       ),
     );
