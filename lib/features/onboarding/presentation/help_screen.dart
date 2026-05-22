@@ -139,8 +139,9 @@ class HelpScreen extends StatelessWidget {
             title: 'Jak zmienić wygląd i animacje',
             steps: [
               'Zakładka „Transakcje" → ⋮ (3 kropki) → „Ustawienia".',
-              'Wybierz jeden z 11 motywów (m.in. Kredka, Plastelina, '
-                  'Aurora) + tryb jasny/ciemny.',
+              'Wybierz jeden z 13 motywów (m.in. komiksowa Kredka, '
+                  'Dragon Ball, Pokémon, Plastelina, Aurora) + tryb '
+                  'jasny/ciemny. Każdy ma inne kolory, czcionkę i kształty.',
               'Niżej — włącz/wyłącz pojedyncze animacje i dźwięki.',
             ],
           ),

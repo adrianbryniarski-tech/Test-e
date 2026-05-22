@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/budgets/presentation/budgets_screen.dart';
 import 'package:nasz_budzet_domowy/features/categories/presentation/categories_screen.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:nasz_budzet_domowy/features/investments/presentation/investments_screen.dart';
 import 'package:nasz_budzet_domowy/features/onboarding/presentation/whats_new_screen.dart';
+import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/presentation/transactions_list_screen.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/brand_watermark.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/glowing_button.dart';
@@ -15,14 +18,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Pięć zakładek: Dashboard, Transakcje, Budżety, Inwestycje, Kategorie.
 /// FAB (+) zawsze widoczny — na Inwestycjach dodaje pozycję portfela,
 /// w pozostałych zakładkach dodaje transakcję.
-class HomeShell extends StatefulWidget {
+class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
 
   @override
-  State<HomeShell> createState() => _HomeShellState();
+  ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends ConsumerState<HomeShell> {
   int _index = 0;
 
   static const _seenChangelogKey = 'last_seen_changelog';
@@ -57,6 +60,21 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Ikona zakładki „Dashboard" zależna od motywu — anime-motywy dostają
+    // tematyczny symbol (Poké Ball / kula energii) zamiast pulpitu.
+    final variant = ref.watch(themeVariantProvider);
+    final (dashIcon, dashSelectedIcon) = switch (variant) {
+      AppThemeVariant.pokemon => (
+          Icons.catching_pokemon_outlined,
+          Icons.catching_pokemon,
+        ),
+      AppThemeVariant.dragonBall => (
+          Icons.brightness_7_outlined,
+          Icons.brightness_7,
+        ),
+      _ => (Icons.dashboard_outlined, Icons.dashboard),
+    };
+
     return Scaffold(
       body: NeonGradientBackground(
         child: Stack(
@@ -75,28 +93,28 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
+            icon: Icon(dashIcon),
+            selectedIcon: Icon(dashSelectedIcon),
             label: 'Dashboard',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined),
             selectedIcon: Icon(Icons.receipt_long),
             label: 'Transakcje',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.savings_outlined),
             selectedIcon: Icon(Icons.savings),
             label: 'Budżety',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.trending_up_outlined),
             selectedIcon: Icon(Icons.trending_up),
             label: 'Inwestycje',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.category_outlined),
             selectedIcon: Icon(Icons.category),
             label: 'Kategorie',
