@@ -76,12 +76,14 @@ class HelpScreen extends StatelessWidget {
             steps: [
               'Najpierw w Ustawieniach → „Sterowanie głosem" pobierz '
                   'model głosu (~50 MB) — jednorazowo, najlepiej przez Wi-Fi.',
-              'Potem na ekranie dodawania transakcji stuknij ikonę '
-                  'mikrofonu (prawy górny róg).',
-              'Przytrzymaj i powiedz np. „pięćdziesiąt złotych Biedronka '
-                  'wczoraj".',
-              'Apka sama wypełni kwotę, kategorię i datę — sprawdź '
-                  'i zapisz.',
+              'Na ekranie dodawania transakcji stuknij ikonę mikrofonu '
+                  '(prawy górny róg) — otworzy się okienko „Dodaj głosem".',
+              'Stuknij duży mikrofon, powiedz np. „50 zł Biedronka wczoraj", '
+                  'a potem stuknij ponownie, żeby zakończyć (nie trzeba '
+                  'trzymać).',
+              'Co rozumie: kwotę, datę (dziś / wczoraj / „13 marca"), sklep '
+                  'lub nazwę kategorii, oraz dochód (np. „pensja 5000").',
+              'Apka wypełni pola — sprawdź i zapisz.',
             ],
           ),
           _HelpSection(

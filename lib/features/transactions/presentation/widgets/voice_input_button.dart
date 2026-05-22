@@ -4,16 +4,11 @@ import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/voice_input_service.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/voice_parser.dart';
 
-/// Przycisk push-to-talk z Vosk.
-///
-/// Stany wizualne:
-/// - unavailable → ikona mikrofonu wyszarzona + tooltip "Pobierz model"
-/// - loading     → spinner
-/// - ready       → ikona mikrofonu (trzymaj = nagrywanie)
-/// - listening   → pulsująca czerwona ikona + opis "Mów..."
-/// - processing  → spinner
-///
-/// Po rozpoznaniu wywoływany jest [onResult] z przefiltrowanym wynikiem.
+/// Ikona mikrofonu w AppBar. Po stuknięciu otwiera arkusz „Dodaj głosem"
+/// (instrukcja + przykłady + przełącznik nagrywania). Stany:
+/// - unavailable → mic_off, stuknięcie prowadzi do Ustawień (pobierz model)
+/// - loading     → spinner (model się ładuje)
+/// - inaczej     → mic, stuknięcie otwiera arkusz
 class VoiceInputButton extends StatefulWidget {
   const VoiceInputButton({
     required this.categories,
@@ -28,18 +23,12 @@ class VoiceInputButton extends StatefulWidget {
   State<VoiceInputButton> createState() => _VoiceInputButtonState();
 }
 
-class _VoiceInputButtonState extends State<VoiceInputButton>
-    with SingleTickerProviderStateMixin {
+class _VoiceInputButtonState extends State<VoiceInputButton> {
   final _service = VoiceInputService.instance;
-  late AnimationController _pulse;
 
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..repeat(reverse: true);
     _service
       ..addListener(_rebuild)
       ..init();
@@ -48,7 +37,6 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
   @override
   void dispose() {
     _service.removeListener(_rebuild);
-    _pulse.dispose();
     super.dispose();
   }
 
@@ -56,28 +44,29 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
     if (mounted) setState(() {});
   }
 
-  Future<void> _startListening() async {
-    if (_service.status != VoiceStatus.ready) return;
-    await _service.startListening();
-  }
-
-  Future<void> _stopListening() async {
-    if (_service.status != VoiceStatus.listening) return;
-    final transcript = await _service.stopListening();
-    if (transcript == null || transcript.isEmpty) return;
-    final parser = VoiceParser(widget.categories);
-    final result = parser.parse(transcript);
+  Future<void> _openSheet() async {
+    final transcript = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const _VoiceSheet(),
+    );
+    if (!mounted || transcript == null || transcript.trim().isEmpty) return;
+    final result = VoiceParser(widget.categories).parse(transcript);
     widget.onResult(result);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Rozpoznano: „$transcript". Sprawdź i zapisz.'),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final status = _service.status;
 
     if (status == VoiceStatus.unavailable) {
-      // Klikalny skrót: model niegotowy → przejdź od razu do Ustawień,
-      // gdzie można go pobrać.
       return IconButton.outlined(
         tooltip: 'Model głosu niegotowy — stuknij, aby pobrać w Ustawieniach',
         onPressed: () => context.push('/settings'),
@@ -85,7 +74,7 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
       );
     }
 
-    if (status == VoiceStatus.loading || status == VoiceStatus.processing) {
+    if (status == VoiceStatus.loading) {
       return const SizedBox(
         width: 48,
         height: 48,
@@ -96,57 +85,167 @@ class _VoiceInputButtonState extends State<VoiceInputButton>
       );
     }
 
-    if (status == VoiceStatus.listening) {
-      return Column(
+    return IconButton(
+      tooltip: 'Dodaj głosem',
+      onPressed: _openSheet,
+      icon: const Icon(Icons.mic),
+    );
+  }
+}
+
+/// Arkusz nagrywania: instrukcja, przykłady komend i duży przycisk
+/// stuknij-by-nagrać / stuknij-by-zakończyć. Po zakończeniu zwraca
+/// transkrypt przez `Navigator.pop`.
+class _VoiceSheet extends StatefulWidget {
+  const _VoiceSheet();
+
+  @override
+  State<_VoiceSheet> createState() => _VoiceSheetState();
+}
+
+class _VoiceSheetState extends State<_VoiceSheet> {
+  final _service = VoiceInputService.instance;
+  bool _closing = false;
+
+  static const _examples = [
+    '„50 zł Biedronka wczoraj"',
+    '„120 złotych Orlen"',
+    '„apteka 30 zł dzisiaj"',
+    '„pensja 5000" (dochód)',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _service.addListener(_rebuild);
+  }
+
+  @override
+  void dispose() {
+    _service.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _toggle() async {
+    if (_service.status == VoiceStatus.ready) {
+      await _service.startListening();
+    } else if (_service.status == VoiceStatus.listening) {
+      _closing = true;
+      final transcript = await _service.stopListening();
+      if (!mounted) return;
+      Navigator.of(context).pop(transcript);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final status = _service.status;
+    final listening = status == VoiceStatus.listening;
+    final processing = status == VoiceStatus.processing || _closing;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 4,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+      ),
+      child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          GestureDetector(
-            onTapUp: (_) => _stopListening(),
-            child: AnimatedBuilder(
-              animation: _pulse,
-              builder: (context, _) => Container(
-                width: 56,
-                height: 56,
+          Text('Dodaj głosem', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Text(
+            listening
+                ? 'Słucham… mów teraz. Gdy skończysz — stuknij, żeby zakończyć.'
+                : 'Stuknij mikrofon i powiedz np. „50 zł Biedronka wczoraj". '
+                    'Stuknij ponownie, żeby zakończyć.',
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 20),
+          Center(
+            child: GestureDetector(
+              onTap: processing ? null : _toggle,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 96,
+                height: 96,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color.lerp(
-                    cs.error,
-                    cs.errorContainer,
-                    _pulse.value,
-                  ),
+                  color: listening ? cs.error : cs.primaryContainer,
                 ),
-                child: Icon(Icons.stop, color: cs.onError, size: 28),
+                child: processing
+                    ? const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        listening ? Icons.stop : Icons.mic,
+                        size: 44,
+                        color: listening ? cs.onError : cs.onPrimaryContainer,
+                      ),
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              listening
+                  ? (_service.partialTranscript?.isNotEmpty ?? false)
+                      ? _service.partialTranscript!
+                      : '…'
+                  : processing
+                      ? 'Przetwarzam…'
+                      : 'Stuknij, żeby nagrać',
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          if (_service.lastError != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: cs.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _service.lastError!,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: cs.onErrorContainer),
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
+          Text('Przykłady', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final ex in _examples)
+                Chip(
+                  label: Text(ex),
+                  visualDensity: VisualDensity.compact,
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
           Text(
-            (_service.partialTranscript?.isNotEmpty ?? false)
-                ? _service.partialTranscript!
-                : 'Mów…',
-            style: Theme.of(context).textTheme.labelSmall,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            'Rozumiem: kwotę, datę (dziś / wczoraj / „13 marca"), sklep lub '
+            'nazwę kategorii, oraz dochód (np. „pensja", „wpłynęło").',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: cs.onSurfaceVariant),
           ),
         ],
-      );
-    }
-
-    // ready
-    return Tooltip(
-      message: 'Trzymaj, żeby nagrać wydatek głosem',
-      child: GestureDetector(
-        onTapDown: (_) => _startListening(),
-        onTapUp: (_) => _stopListening(),
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: cs.primaryContainer,
-          ),
-          child: Icon(Icons.mic, color: cs.onPrimaryContainer),
-        ),
       ),
     );
   }

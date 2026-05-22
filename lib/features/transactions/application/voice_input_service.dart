@@ -70,6 +70,11 @@ class VoiceInputService extends ChangeNotifier {
   String? _partialTranscript;
   String? get partialTranscript => _partialTranscript;
 
+  /// Komunikat ostatniego błędu nagrywania (np. mikrofon zajęty / brak
+  /// zgody). Pokazywany w UI, żeby „nie działa" nigdy nie było ciszą.
+  String? _lastError;
+  String? get lastError => _lastError;
+
   // Stan pobierania modelu (do UI w Ustawieniach).
   bool _downloading = false;
   bool get isDownloading => _downloading;
@@ -186,6 +191,7 @@ class VoiceInputService extends ChangeNotifier {
     if (_recognizer == null) return;
     _status = VoiceStatus.listening;
     _partialTranscript = null;
+    _lastError = null;
     notifyListeners();
 
     try {
@@ -198,6 +204,9 @@ class VoiceInputService extends ChangeNotifier {
       });
     } on Exception catch (e) {
       debugPrint('Vosk listen error: $e');
+      _lastError = 'Nie udało się włączyć mikrofonu. Sprawdź, czy aplikacja '
+          'ma zgodę na mikrofon (Ustawienia telefonu → Aplikacje → '
+          'uprawnienia).';
       _status = VoiceStatus.ready;
       notifyListeners();
     }
