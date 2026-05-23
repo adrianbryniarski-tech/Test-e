@@ -27,7 +27,7 @@ class CategoryAvatar extends ConsumerWidget {
     final variant = ref.watch(themeVariantProvider);
 
     if (variant.isComic) {
-      final ink = comicInk(variant, Theme.of(context).brightness);
+      final ink = comicInk(variant, Theme.of(context).scaffoldBackgroundColor);
       return Container(
         width: size,
         height: size,

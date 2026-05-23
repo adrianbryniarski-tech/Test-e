@@ -120,6 +120,7 @@ enum AppThemeVariant {
 /// W trybie ciemnym tło zawsze = czysta czerń OLED.
 enum MangaPalette {
   biel('Biel', accent: Color(0xFFFF3366), background: Color(0xFFFFFFFF)),
+  czern('Czerń', accent: Color(0xFFFF3366), background: Color(0xFF000000)),
   blekit('Błękit', accent: Color(0xFFFF3366), background: Color(0xFF59C2ED)),
   volt('Volt', accent: Color(0xFFCBD400), background: Color(0xFFFFFFFF)),
   klasyk('Czerwień', accent: Color(0xFFE5241B), background: Color(0xFFFFFFFF));
@@ -163,9 +164,15 @@ class AppTheme {
   ]) {
     final spec = _specFor(variant, brightness, mangaPalette);
 
+    // Gdy tło jest ciemne (np. paleta „Czerń" w trybie jasnym), wymuszamy
+    // ciemny schemat — inaczej tekst (onSurface) byłby czarny na czerni.
+    final effBrightness = spec.background.computeLuminance() < 0.25
+        ? Brightness.dark
+        : brightness;
+
     var colorScheme = ColorScheme.fromSeed(
       seedColor: spec.seed,
-      brightness: brightness,
+      brightness: effBrightness,
     ).copyWith(surface: spec.surface);
 
     // Manga = „krzykliwy" komiks: kolor akcentu MUSI być żywy (Material
@@ -181,7 +188,7 @@ class AppTheme {
       );
     }
 
-    final base = brightness == Brightness.light
+    final base = effBrightness == Brightness.light
         ? ThemeData.light(useMaterial3: true)
         : ThemeData.dark(useMaterial3: true);
 
@@ -424,21 +431,27 @@ class AppTheme {
       // Manga / komiks — biel + czerń (lub czysta czerń OLED w trybie ciemnym),
       // akcent z palety, grube kontury, gęsty raster, ostre panele (radius 0)
       // i komiksowe nagłówki (Bangers). Tryb ciemny = „manga nocą".
-      AppThemeVariant.manga => _ThemeSpec(
-          seed: mangaPalette?.accent ?? const Color(0xFFFF3366),
-          // Tło wg palety w trybie jasnym (biel / sky blue), czerń OLED w
-          // ciemnym. Karty zawsze białe (kontrast jak modal na zegarku).
-          background: isDark
-              ? const Color(0xFF000000)
-              : (mangaPalette?.background ?? const Color(0xFFFFFFFF)),
-          surface: isDark ? const Color(0xFF121212) : const Color(0xFFFFFFFF),
-          cardElevation: 0,
-          cardBorder:
-              isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
-          cardBorderWidth: 3,
-          fontFamily: 'SpaceMono',
-        ),
+      AppThemeVariant.manga => _mangaSpec(isDark, mangaPalette),
     };
+  }
+
+  /// Spec motywu Manga — tło wg palety (biel / czerń / sky blue), w trybie
+  /// ciemnym wymuszona czerń OLED. Kolor kart i konturu dobrany do jasności
+  /// tła (na ciemnym → białe kontury, karty ciut jaśniejsze od tła).
+  static _ThemeSpec _mangaSpec(bool isDark, MangaPalette? palette) {
+    final background = isDark
+        ? const Color(0xFF000000)
+        : (palette?.background ?? const Color(0xFFFFFFFF));
+    final darkBg = background.computeLuminance() < 0.25;
+    return _ThemeSpec(
+      seed: palette?.accent ?? const Color(0xFFFF3366),
+      background: background,
+      surface: darkBg ? const Color(0xFF0E0E0E) : const Color(0xFFFFFFFF),
+      cardElevation: 0,
+      cardBorder: darkBg ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+      cardBorderWidth: 3,
+      fontFamily: 'SpaceMono',
+    );
   }
 
   static double _borderRadiusFor(AppThemeVariant variant) {
