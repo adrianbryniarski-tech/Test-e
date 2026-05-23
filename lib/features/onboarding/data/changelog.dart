@@ -29,6 +29,10 @@ const List<ChangelogEntry> kChangelog = [
     date: '22 maja 2026',
     title: 'Wygodniejszy głos, nowe wyglądy i podkategorie',
     changes: [
+      'Na pulpicie widać teraz wartość portfela inwestycyjnego (z zyskiem), '
+          'jeśli masz jakieś inwestycje.',
+      'Czytelniejszy wykres kołowy kategorii (nic nie nachodzi na tort) oraz '
+          'mniejsze, zgrabniejsze kafelki wyboru motywu w Ustawieniach.',
       'Naprawiony mikrofon: apka prosi teraz o zgodę na mikrofon, a „Słucham…" '
           'pojawia się dopiero gdy mikrofon naprawdę nagrywa (wcześniej ginął '
           'początek zdania). Końcówka nagrania też nie jest już ucinana.',

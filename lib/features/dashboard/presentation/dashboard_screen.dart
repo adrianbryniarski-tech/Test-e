@@ -9,9 +9,11 @@ import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/balan
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/category_pie_tile.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/date_range_bar.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/income_expense_bar_tile.dart';
+import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/portfolio_value_tile.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/running_balance_tile.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/household/presentation/invite_partner_sheet.dart';
+import 'package:nasz_budzet_domowy/features/investments/application/investment_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/sync_status_indicator.dart';
@@ -27,6 +29,8 @@ class DashboardScreen extends ConsumerWidget {
     final summaryAsync = ref.watch(dashboardSummaryProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final householdId = ref.watch(currentHouseholdIdProvider).value;
+    final hasInvestments =
+        (ref.watch(investmentsProvider).value ?? const []).isNotEmpty;
 
     return CustomScrollView(
       slivers: [
@@ -121,6 +125,7 @@ class DashboardScreen extends ConsumerWidget {
               sliver: SliverGrid(
                 delegate: SliverChildListDelegate([
                   BalanceTile(summary: summary),
+                  if (hasInvestments) const PortfolioValueTile(),
                   CategoryPieTile(
                     summary: summary,
                     categories: categories,
