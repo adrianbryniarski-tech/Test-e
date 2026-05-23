@@ -30,7 +30,12 @@ class PortfolioChart extends StatelessWidget {
       );
     }
 
-    final values = snapshots.map((s) => s.valuePln).toList();
+    // Sortujemy rosnąco po dacie — najstarszy punkt z LEWEJ, najnowszy z
+    // PRAWEJ (wcześniej provider dawał malejąco i wykres czytał się odwrotnie).
+    final ordered = [...snapshots]
+      ..sort((a, b) => a.capturedAt.compareTo(b.capturedAt));
+
+    final values = ordered.map((s) => s.valuePln).toList();
     final minY = values.reduce((a, b) => a < b ? a : b);
     final maxY = values.reduce((a, b) => a > b ? a : b);
     final range = (maxY - minY).abs();
@@ -39,7 +44,7 @@ class PortfolioChart extends StatelessWidget {
     final up = values.last >= values.first;
     final color = up ? AppTheme.incomeAccent : AppTheme.expenseAccent;
 
-    final spots = snapshots.asMap().entries.map((e) {
+    final spots = ordered.asMap().entries.map((e) {
       return FlSpot(e.key.toDouble(), e.value.valuePln);
     }).toList();
 
@@ -63,7 +68,7 @@ class PortfolioChart extends StatelessWidget {
               curveSmoothness: 0.3,
               color: color,
               barWidth: 3,
-              dotData: FlDotData(show: snapshots.length <= 12),
+              dotData: FlDotData(show: ordered.length <= 12),
               belowBarData: BarAreaData(show: true, color: color.withAlpha(26)),
             ),
           ],
@@ -76,16 +81,16 @@ class PortfolioChart extends StatelessWidget {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                interval: (snapshots.length / 4).ceilToDouble(),
+                interval: (ordered.length / 4).ceilToDouble(),
                 getTitlesWidget: (value, meta) {
                   final idx = value.toInt();
-                  if (idx < 0 || idx >= snapshots.length) {
+                  if (idx < 0 || idx >= ordered.length) {
                     return const SizedBox.shrink();
                   }
                   return Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      fmtDate.format(snapshots[idx].capturedAt),
+                      fmtDate.format(ordered[idx].capturedAt),
                       style: tt.labelSmall?.copyWith(
                         fontSize: 9,
                         color: cs.onSurfaceVariant,
@@ -101,9 +106,7 @@ class PortfolioChart extends StatelessWidget {
               getTooltipColor: (_) => cs.inverseSurface,
               getTooltipItems: (spots) => spots.map((s) {
                 final idx = s.x.toInt();
-                final d = idx < snapshots.length
-                    ? snapshots[idx].capturedAt
-                    : null;
+                final d = idx < ordered.length ? ordered[idx].capturedAt : null;
                 return LineTooltipItem(
                   d != null ? '${fmtDate.format(d)}\n' : '',
                   tt.labelSmall!.copyWith(color: cs.onInverseSurface),
