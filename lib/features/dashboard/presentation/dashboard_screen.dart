@@ -2,9 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/application/dashboard_providers.dart';
+import 'package:nasz_budzet_domowy/features/dashboard/presentation/manga_dashboard.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/balance_tile.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/category_pie_tile.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/date_range_bar.dart';
@@ -14,6 +16,7 @@ import 'package:nasz_budzet_domowy/features/dashboard/presentation/widgets/runni
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/household/presentation/invite_partner_sheet.dart';
 import 'package:nasz_budzet_domowy/features/investments/application/investment_providers.dart';
+import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
@@ -32,6 +35,7 @@ class DashboardScreen extends ConsumerWidget {
     final householdId = ref.watch(currentHouseholdIdProvider).value;
     final hasInvestments =
         (ref.watch(investmentsProvider).value ?? const []).isNotEmpty;
+    final isManga = ref.watch(themeVariantProvider) == AppThemeVariant.manga;
 
     return CustomScrollView(
       slivers: [
@@ -121,6 +125,11 @@ class DashboardScreen extends ConsumerWidget {
           ),
           data: (summary) {
             final categories = categoriesAsync.value ?? const [];
+            if (isManga) {
+              return SliverToBoxAdapter(
+                child: MangaDashboardBody(summary: summary),
+              );
+            }
             return SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
               sliver: SliverGrid(
