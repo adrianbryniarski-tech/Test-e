@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 
 /// Owija child w tło zależne od motywu:
@@ -22,12 +23,17 @@ class NeonGradientBackground extends ConsumerWidget {
     // go przy każdej klatce treści (inaczej ~1500 kropek co scroll = zacięcia).
     if (variant.isComic) {
       final ink = Theme.of(context).colorScheme.onSurface;
+      // Manga = wyraźniejszy, gęstszy raster (jak screentone na zegarkach).
+      final isManga = variant == AppThemeVariant.manga;
       return Stack(
         children: [
           Positioned.fill(
             child: RepaintBoundary(
               child: CustomPaint(
-                painter: _HalftonePainter(ink.withValues(alpha: 0.06)),
+                painter: _HalftonePainter(
+                  ink.withValues(alpha: isManga ? 0.11 : 0.06),
+                  gap: isManga ? 13 : 16,
+                ),
                 isComplex: true,
               ),
             ),
@@ -92,15 +98,15 @@ class NeonGradientBackground extends ConsumerWidget {
 
 /// Rysuje równomierną siatkę kropek (efekt komiksowego rastra/halftone).
 class _HalftonePainter extends CustomPainter {
-  _HalftonePainter(this.color);
+  _HalftonePainter(this.color, {this.gap = 16});
 
   final Color color;
+  final double gap;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
-    const gap = 16.0;
-    const radius = 1.4;
+    final radius = gap * 0.09;
     for (var y = 0.0; y < size.height; y += gap) {
       for (var x = 0.0; x < size.width; x += gap) {
         canvas.drawCircle(Offset(x, y), radius, paint);
@@ -110,5 +116,5 @@ class _HalftonePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_HalftonePainter oldDelegate) =>
-      oldDelegate.color != color;
+      oldDelegate.color != color || oldDelegate.gap != gap;
 }

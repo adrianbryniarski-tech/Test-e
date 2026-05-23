@@ -39,6 +39,39 @@ class ThemeVariantNotifier extends Notifier<AppThemeVariant> {
   }
 }
 
+/// Zestaw kolorów akcentu dla motywu „Manga". Persistowany lokalnie.
+final mangaPaletteProvider =
+    NotifierProvider<MangaPaletteNotifier, MangaPalette>(
+  MangaPaletteNotifier.new,
+);
+
+class MangaPaletteNotifier extends Notifier<MangaPalette> {
+  static const _key = 'manga_palette';
+
+  @override
+  MangaPalette build() {
+    _load();
+    return MangaPalette.czerwien;
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString(_key);
+    if (name == null) return;
+    final loaded = MangaPalette.values.firstWhere(
+      (p) => p.name == name,
+      orElse: () => MangaPalette.czerwien,
+    );
+    if (loaded != state) state = loaded;
+  }
+
+  Future<void> set(MangaPalette palette) async {
+    state = palette;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, palette.name);
+  }
+}
+
 /// Tryb jasny/ciemny/auto. Domyślnie `system` — Android decyduje.
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
   ThemeModeNotifier.new,

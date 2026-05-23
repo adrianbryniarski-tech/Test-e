@@ -29,9 +29,10 @@ const List<ChangelogEntry> kChangelog = [
     date: '22 maja 2026',
     title: 'Wygodniejszy głos, nowe wyglądy i podkategorie',
     changes: [
-      'Nowy motyw „Manga": czarno-biały komiks z grubymi konturami, kropkowym '
-          'rastrem, czerwonym akcentem i własnymi, ręcznie rysowanymi '
-          'komiksowymi ikonami (nawigacja, plus, mikrofon).',
+      'Nowy motyw „Manga": ostry czarno-biały komiks z grubymi konturami, '
+          'kropkowym rastrem i własnymi komiksowymi ikonami (też kategorie '
+          'i paski). Do wyboru 4 zestawy kolorów (czerwień, błękit, złoty, '
+          'mięta) w Ustawieniach.',
       'Na pulpicie widać teraz wartość portfela inwestycyjnego (z zyskiem), '
           'jeśli masz jakieś inwestycje.',
       'Czytelniejszy wykres kołowy kategorii (nic nie nachodzi na tort) oraz '
