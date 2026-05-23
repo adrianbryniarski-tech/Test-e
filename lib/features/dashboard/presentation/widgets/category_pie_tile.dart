@@ -62,17 +62,13 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
           ? CategoryPalette.fromHex(cat.colorHex)
           : CategoryPalette.fallback;
       final isTouched = _touched == idx;
-      final pct = total > 0 ? e.value / total * 100 : 0.0;
+      // Bez procentów NA torcie — przy wąskich wycinkach zachodziły na
+      // wykres. Procenty pokazujemy czytelnie w legendzie obok nazwy.
       return PieChartSectionData(
         value: e.value.toDouble(),
         color: color,
         radius: isTouched ? 56 : 48,
-        title: pct >= 8 ? '${pct.toStringAsFixed(0)}%' : '',
-        titleStyle: tt.labelSmall?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: 10,
-        ),
+        showTitle: false,
       );
     }).toList();
 
@@ -136,7 +132,7 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Expanded(
+                        Flexible(
                           child: Text(
                             cat?.name ?? 'Nieznana',
                             style:
@@ -144,16 +140,13 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 6),
                         Text(
                           '${pct.toStringAsFixed(0)}%',
                           style: Theme.of(context)
                               .textTheme
                               .labelSmall
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
