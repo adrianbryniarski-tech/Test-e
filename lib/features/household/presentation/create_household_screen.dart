@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CreateHouseholdScreen extends ConsumerStatefulWidget {
@@ -94,7 +95,7 @@ class _CreateHouseholdScreenState extends ConsumerState<CreateHouseholdScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Nazwa',
                     hintText: 'Np. Nasz dom, Rodzina Kowalskich…',
-                    prefixIcon: Icon(Icons.home_outlined),
+                    prefixIcon: AppIcon(Icons.home_outlined),
                   ),
                   validator: (value) {
                     final v = value?.trim() ?? '';

@@ -74,7 +74,7 @@ class _VoiceInputButtonState extends ConsumerState<VoiceInputButton> {
       return IconButton.outlined(
         tooltip: 'Model głosu niegotowy — stuknij, aby pobrać w Ustawieniach',
         onPressed: () => context.push('/settings'),
-        icon: const Icon(Icons.mic_off_outlined),
+        icon: const AppIcon(Icons.mic_off_outlined),
       );
     }
 
@@ -93,8 +93,9 @@ class _VoiceInputButtonState extends ConsumerState<VoiceInputButton> {
     return IconButton(
       tooltip: 'Dodaj głosem',
       onPressed: _openSheet,
-      icon:
-          isManga ? const MangaIcon(MangaIconKind.mic) : const Icon(Icons.mic),
+      icon: isManga
+          ? const MangaIcon(MangaIconKind.mic)
+          : const AppIcon(Icons.mic),
     );
   }
 }
@@ -242,7 +243,7 @@ class _VoiceSheetState extends ConsumerState<_VoiceSheet> {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: _service.openSystemSettings,
-                icon: const Icon(Icons.settings),
+                icon: const AppIcon(Icons.settings),
                 label: const Text('Otwórz ustawienia'),
               ),
             ],

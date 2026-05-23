@@ -78,6 +78,42 @@ MangaIconKind? _mangaKindFor(IconData icon) {
   if (icon == Icons.arrow_downward_rounded || icon == Icons.arrow_downward) {
     return MangaIconKind.arrowDown;
   }
+  if (icon == Icons.north || icon == Icons.south) {
+    return icon == Icons.north
+        ? MangaIconKind.arrowUp
+        : MangaIconKind.arrowDown;
+  }
+  if (icon == Icons.chevron_right) return MangaIconKind.chevron;
+  if (icon == Icons.copy || icon == Icons.copy_outlined) {
+    return MangaIconKind.copy;
+  }
+  if (icon == Icons.help_outline) return MangaIconKind.help;
+  if (icon == Icons.check_circle || icon == Icons.check_circle_outline) {
+    return MangaIconKind.checkCircle;
+  }
+  if (icon == Icons.error_outline) return MangaIconKind.error;
+  if (icon == Icons.download) return MangaIconKind.download;
+  if (icon == Icons.lock_outline || icon == Icons.lock) {
+    return MangaIconKind.lock;
+  }
+  if (icon == Icons.email_outlined || icon == Icons.email) {
+    return MangaIconKind.email;
+  }
+  if (icon == Icons.home_outlined || icon == Icons.home) {
+    return MangaIconKind.home;
+  }
+  if (icon == Icons.login) return MangaIconKind.login;
+  if (icon == Icons.light_mode) return MangaIconKind.sun;
+  if (icon == Icons.dark_mode) return MangaIconKind.moon;
+  if (icon == Icons.brightness_auto) return MangaIconKind.auto;
+  if (icon == Icons.auto_awesome_outlined || icon == Icons.auto_awesome) {
+    return MangaIconKind.star;
+  }
+  if (icon == Icons.circle) return MangaIconKind.dot;
+  if (icon == Icons.short_text || icon == Icons.notes) {
+    return MangaIconKind.lines;
+  }
+  if (icon == Icons.mic_off_outlined) return MangaIconKind.mic;
   return null;
 }
 
@@ -104,6 +140,22 @@ enum MangaIconKind {
   back,
   arrowUp,
   arrowDown,
+  chevron,
+  copy,
+  help,
+  checkCircle,
+  error,
+  download,
+  lock,
+  email,
+  home,
+  login,
+  sun,
+  moon,
+  auto,
+  star,
+  dot,
+  lines,
 }
 
 /// Ikona w stylu komiksowym/manga — grube czarne kontury rysowane na canvasie.
@@ -199,6 +251,42 @@ class _MangaIconPainter extends CustomPainter {
         _arrow(canvas, s, stroke, -math.pi / 2);
       case MangaIconKind.arrowDown:
         _arrow(canvas, s, stroke, math.pi / 2);
+      case MangaIconKind.chevron:
+        _chevron(canvas, s, stroke);
+      case MangaIconKind.copy:
+        _copy(canvas, s, stroke);
+      case MangaIconKind.help:
+        _help(canvas, s, stroke);
+      case MangaIconKind.checkCircle:
+        _checkCircle(canvas, s, stroke);
+      case MangaIconKind.error:
+        _errorIcon(canvas, s, stroke);
+      case MangaIconKind.download:
+        _download(canvas, s, stroke);
+      case MangaIconKind.lock:
+        _lock(canvas, s, stroke, fill);
+      case MangaIconKind.email:
+        _email(canvas, s, stroke);
+      case MangaIconKind.home:
+        _home(canvas, s, stroke);
+      case MangaIconKind.login:
+        _login(canvas, s, stroke);
+      case MangaIconKind.sun:
+        _sun(canvas, s, stroke);
+      case MangaIconKind.moon:
+        _moon(canvas, s, stroke);
+      case MangaIconKind.auto:
+        _auto(canvas, s, stroke);
+      case MangaIconKind.star:
+        _star(canvas, s, stroke);
+      case MangaIconKind.dot:
+        canvas.drawCircle(
+          Offset(s * 0.5, s * 0.5),
+          s * 0.22,
+          Paint()..color = color,
+        );
+      case MangaIconKind.lines:
+        _lines(canvas, s, stroke);
     }
   }
 
@@ -506,6 +594,199 @@ class _MangaIconPainter extends CustomPainter {
       ..drawPath(shaft, p)
       ..drawPath(head, p)
       ..restore();
+  }
+
+  // Strzałka „>" (rozwiń).
+  void _chevron(Canvas c, double s, Paint stroke) {
+    final path = Path()
+      ..moveTo(s * 0.4, s * 0.24)
+      ..lineTo(s * 0.66, s * 0.5)
+      ..lineTo(s * 0.4, s * 0.76);
+    c.drawPath(path, stroke);
+  }
+
+  // Kopiuj: dwa prostokąty.
+  void _copy(Canvas c, double s, Paint stroke) {
+    c.drawRRect(_box(0.34, 0.16, 0.82, 0.64, s), stroke);
+    c.drawRRect(_box(0.18, 0.36, 0.66, 0.84, s), stroke);
+  }
+
+  // Pomoc: znak „?" jako łuk + kropka.
+  void _help(Canvas c, double s, Paint stroke) {
+    c.drawCircle(Offset(s * 0.5, s * 0.5), s * 0.32, stroke);
+    final q = Path()
+      ..moveTo(s * 0.38, s * 0.4)
+      ..arcToPoint(Offset(s * 0.5, s * 0.56), radius: Radius.circular(s * 0.13))
+      ..lineTo(s * 0.5, s * 0.62);
+    c.drawPath(q, stroke);
+    c.drawCircle(Offset(s * 0.5, s * 0.72), s * 0.035, Paint()..color = color);
+  }
+
+  void _checkCircle(Canvas c, double s, Paint stroke) {
+    c.drawCircle(Offset(s * 0.5, s * 0.5), s * 0.34, stroke);
+    final p = Path()
+      ..moveTo(s * 0.34, s * 0.52)
+      ..lineTo(s * 0.46, s * 0.64)
+      ..lineTo(s * 0.68, s * 0.38);
+    c.drawPath(p, stroke);
+  }
+
+  void _errorIcon(Canvas c, double s, Paint stroke) {
+    c.drawCircle(Offset(s * 0.5, s * 0.5), s * 0.34, stroke);
+    c.drawLine(Offset(s * 0.5, s * 0.32), Offset(s * 0.5, s * 0.56), stroke);
+    c.drawCircle(Offset(s * 0.5, s * 0.68), s * 0.035, Paint()..color = color);
+  }
+
+  // Pobierz: strzałka w dół do tacki.
+  void _download(Canvas c, double s, Paint stroke) {
+    c.drawLine(Offset(s * 0.5, s * 0.18), Offset(s * 0.5, s * 0.58), stroke);
+    final head = Path()
+      ..moveTo(s * 0.32, s * 0.42)
+      ..lineTo(s * 0.5, s * 0.6)
+      ..lineTo(s * 0.68, s * 0.42);
+    c.drawPath(head, stroke);
+    final tray = Path()
+      ..moveTo(s * 0.22, s * 0.72)
+      ..lineTo(s * 0.22, s * 0.82)
+      ..lineTo(s * 0.78, s * 0.82)
+      ..lineTo(s * 0.78, s * 0.72);
+    c.drawPath(tray, stroke);
+  }
+
+  // Kłódka.
+  void _lock(Canvas c, double s, Paint stroke, Paint fill) {
+    final body = _box(0.26, 0.46, 0.74, 0.84, s);
+    if (filled) c.drawRRect(body, fill);
+    c.drawRRect(body, stroke);
+    final shackle = Path()
+      ..moveTo(s * 0.36, s * 0.46)
+      ..lineTo(s * 0.36, s * 0.36)
+      ..arcToPoint(
+        Offset(s * 0.64, s * 0.36),
+        radius: Radius.circular(s * 0.14),
+      )
+      ..lineTo(s * 0.64, s * 0.46);
+    c.drawPath(shackle, stroke);
+  }
+
+  // Koperta.
+  void _email(Canvas c, double s, Paint stroke) {
+    c.drawRRect(_box(0.16, 0.26, 0.84, 0.74, s), stroke);
+    final flap = Path()
+      ..moveTo(s * 0.18, s * 0.3)
+      ..lineTo(s * 0.5, s * 0.54)
+      ..lineTo(s * 0.82, s * 0.3);
+    c.drawPath(flap, stroke);
+  }
+
+  // Domek.
+  void _home(Canvas c, double s, Paint stroke) {
+    final roof = Path()
+      ..moveTo(s * 0.18, s * 0.5)
+      ..lineTo(s * 0.5, s * 0.2)
+      ..lineTo(s * 0.82, s * 0.5);
+    c.drawPath(roof, stroke);
+    final walls = Path()
+      ..moveTo(s * 0.28, s * 0.46)
+      ..lineTo(s * 0.28, s * 0.82)
+      ..lineTo(s * 0.72, s * 0.82)
+      ..lineTo(s * 0.72, s * 0.46);
+    c.drawPath(walls, stroke);
+  }
+
+  // Zaloguj: drzwi + strzałka do środka.
+  void _login(Canvas c, double s, Paint stroke) {
+    final door = Path()
+      ..moveTo(s * 0.5, s * 0.18)
+      ..lineTo(s * 0.78, s * 0.18)
+      ..lineTo(s * 0.78, s * 0.82)
+      ..lineTo(s * 0.5, s * 0.82);
+    c.drawPath(door, stroke);
+    c.drawLine(Offset(s * 0.18, s * 0.5), Offset(s * 0.56, s * 0.5), stroke);
+    final head = Path()
+      ..moveTo(s * 0.4, s * 0.36)
+      ..lineTo(s * 0.56, s * 0.5)
+      ..lineTo(s * 0.4, s * 0.64);
+    c.drawPath(head, stroke);
+  }
+
+  // Słońce.
+  void _sun(Canvas c, double s, Paint stroke) {
+    final cx = s * 0.5;
+    final cy = s * 0.5;
+    c.drawCircle(Offset(cx, cy), s * 0.18, stroke);
+    for (var i = 0; i < 8; i++) {
+      final a = i * math.pi / 4;
+      final dx = math.cos(a);
+      final dy = math.sin(a);
+      c.drawLine(
+        Offset(cx + dx * s * 0.28, cy + dy * s * 0.28),
+        Offset(cx + dx * s * 0.38, cy + dy * s * 0.38),
+        stroke,
+      );
+    }
+  }
+
+  // Księżyc.
+  void _moon(Canvas c, double s, Paint stroke) {
+    final p = Path()
+      ..moveTo(s * 0.66, s * 0.22)
+      ..arcToPoint(
+        Offset(s * 0.66, s * 0.78),
+        radius: Radius.circular(s * 0.3),
+      )
+      ..arcToPoint(
+        Offset(s * 0.66, s * 0.22),
+        radius: Radius.circular(s * 0.42),
+        clockwise: false,
+      );
+    c.drawPath(p, stroke);
+  }
+
+  // Auto (jasny/ciemny): pół słońca, pół księżyca = kółko z pionową kreską.
+  void _auto(Canvas c, double s, Paint stroke) {
+    c.drawCircle(Offset(s * 0.5, s * 0.5), s * 0.3, stroke);
+    final half = Paint()..color = color;
+    c.drawPath(
+      Path()
+        ..moveTo(s * 0.5, s * 0.2)
+        ..arcToPoint(Offset(s * 0.5, s * 0.8), radius: Radius.circular(s * 0.3))
+        ..close(),
+      half,
+    );
+  }
+
+  // Gwiazdka (auto_awesome).
+  void _star(Canvas c, double s, Paint stroke) {
+    final center = Offset(s * 0.5, s * 0.5);
+    final r = s * 0.34;
+    final path = Path();
+    for (var i = 0; i < 5; i++) {
+      final outerA = -math.pi / 2 + i * 2 * math.pi / 5;
+      final innerA = outerA + math.pi / 5;
+      final ox = center.dx + r * math.cos(outerA);
+      final oy = center.dy + r * math.sin(outerA);
+      final ix = center.dx + r * 0.45 * math.cos(innerA);
+      final iy = center.dy + r * 0.45 * math.sin(innerA);
+      if (i == 0) {
+        path.moveTo(ox, oy);
+      } else {
+        path.lineTo(ox, oy);
+      }
+      path.lineTo(ix, iy);
+    }
+    c.drawPath(path..close(), stroke);
+  }
+
+  // Linijki tekstu.
+  void _lines(Canvas c, double s, Paint stroke) {
+    final p = Paint()
+      ..color = stroke.color
+      ..strokeWidth = s * 0.09
+      ..strokeCap = StrokeCap.round;
+    for (final y in [0.32, 0.5, 0.68]) {
+      c.drawLine(Offset(s * 0.22, s * y), Offset(s * 0.78, s * y), p);
+    }
   }
 
   @override

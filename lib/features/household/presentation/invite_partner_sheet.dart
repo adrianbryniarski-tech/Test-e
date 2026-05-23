@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/household/data/household_repository.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Bottom sheet do udostępnienia kodu zaproszenia.
 /// Pokazuje aktywne (nieprzyjęte, niewygasłe) zaproszenia gospodarstwa.
@@ -132,7 +133,7 @@ class _InvitePartnerSheetState extends ConsumerState<InvitePartnerSheet> {
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: (_loading || _creating) ? null : _createNew,
-            icon: const Icon(Icons.refresh),
+            icon: const AppIcon(Icons.refresh),
             label: const Text('Wygeneruj nowy kod'),
           ),
           const SizedBox(height: 8),
@@ -195,7 +196,7 @@ class _CodeBlock extends StatelessWidget {
                   ),
                 );
               },
-              icon: const Icon(Icons.copy),
+              icon: const AppIcon(Icons.copy),
               label: const Text('Kopiuj kod'),
             ),
           ],

@@ -9,6 +9,7 @@ import 'package:nasz_budzet_domowy/features/budgets/presentation/widgets/budget_
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Ekran listy budżetów miesięcznych. Każdy rekord = jedna kategoria
 /// wydatków + miesięczny limit + pasek postępu wydatków w bieżącym miesiącu.
@@ -36,7 +37,7 @@ class BudgetsScreen extends ConsumerWidget {
           actions: [
             IconButton(
               tooltip: 'Odśwież',
-              icon: const Icon(Icons.refresh),
+              icon: const AppIcon(Icons.refresh),
               onPressed: () {
                 ref.invalidate(budgetsProvider);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -49,7 +50,7 @@ class BudgetsScreen extends ConsumerWidget {
             ),
             IconButton(
               tooltip: 'Nowy budżet',
-              icon: const Icon(Icons.add),
+              icon: const AppIcon(Icons.add),
               onPressed: () => _openCreateSheet(context),
             ),
           ],

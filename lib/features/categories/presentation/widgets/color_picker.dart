@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Picker 12-kolorowej palety low-stimulus. Każde koło tap-em wybiera kolor.
 class ColorPicker extends StatelessWidget {
@@ -67,7 +68,7 @@ class _ColorDot extends StatelessWidget {
               : Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: isSelected
-            ? const Icon(Icons.check, color: Colors.white, size: 22)
+            ? const AppIcon(Icons.check, color: Colors.white, size: 22)
             : null,
       ),
     );

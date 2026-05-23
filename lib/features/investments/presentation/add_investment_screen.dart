@@ -13,6 +13,7 @@ import 'package:nasz_budzet_domowy/features/investments/data/price_service.dart'
 import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Waluta wpisywanej ceny zakupu. Aktywa bywają kupowane za USD/EUR —
 /// przeliczamy na PLN po kursie średnim NBP z dnia zakupu.
@@ -333,17 +334,17 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
                     ButtonSegment(
                       value: AssetType.crypto,
                       label: Text('Krypto'),
-                      icon: Icon(Icons.currency_bitcoin),
+                      icon: AppIcon(Icons.currency_bitcoin),
                     ),
                     ButtonSegment(
                       value: AssetType.gold,
                       label: Text('Złoto'),
-                      icon: Icon(Icons.circle, color: Color(0xFFE8C24A)),
+                      icon: AppIcon(Icons.circle, color: Color(0xFFE8C24A)),
                     ),
                     ButtonSegment(
                       value: AssetType.silver,
                       label: Text('Srebro'),
-                      icon: Icon(Icons.circle, color: Color(0xFFB0B7C3)),
+                      icon: AppIcon(Icons.circle, color: Color(0xFFB0B7C3)),
                     ),
                   ],
                   selected: {_type},
@@ -368,7 +369,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Szukaj (Bitcoin, Solana…)',
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: const AppIcon(Icons.search),
                     suffixIcon: _searching
                         ? const Padding(
                             padding: EdgeInsets.all(12),
@@ -443,7 +444,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: _pickDate,
-                icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                icon: const AppIcon(Icons.calendar_today_outlined, size: 18),
                 label: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(

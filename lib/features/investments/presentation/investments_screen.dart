@@ -308,7 +308,7 @@ class _ValuationTile extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit_outlined),
+              leading: const AppIcon(Icons.edit_outlined),
               title: const Text('Edytuj pozycję'),
               onTap: () {
                 Navigator.of(sheetCtx).pop();

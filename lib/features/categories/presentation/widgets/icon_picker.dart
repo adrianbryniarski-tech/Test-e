@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/material_symbol_icon.dart';
 
 /// Grid pickera ikon Material Symbols. Lista wczytana z
@@ -81,7 +82,7 @@ class _IconPickerState extends State<IconPicker> {
         TextField(
           decoration: const InputDecoration(
             hintText: 'Szukaj ikony (np. „paliwo", „kawa")',
-            prefixIcon: Icon(Icons.search),
+            prefixIcon: AppIcon(Icons.search),
             isDense: true,
           ),
           onChanged: (v) => setState(() => _query = v.trim()),
