@@ -335,37 +335,48 @@ class _MangaPaletteRow extends ConsumerWidget {
     return Row(
       children: [
         for (final p in MangaPalette.values)
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: GestureDetector(
-              onTap: () => ref.read(mangaPaletteProvider.notifier).set(p),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: p.accent,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: ink,
-                        width: selected == p ? 3.5 : 1.5,
+          Builder(
+            builder: (context) {
+              // Kolor wyróżniający: Błękit = tło, reszta = akcent.
+              final swatch = p.background == const Color(0xFFFFFFFF)
+                  ? p.accent
+                  : p.background;
+              return Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: GestureDetector(
+                  onTap: () => ref.read(mangaPaletteProvider.notifier).set(p),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: swatch,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: ink,
+                            width: selected == p ? 3.5 : 1.5,
+                          ),
+                        ),
+                        child: selected == p
+                            ? Icon(
+                                Icons.check,
+                                color: _onAccent(swatch),
+                                size: 22,
+                              )
+                            : null,
                       ),
-                    ),
-                    child: selected == p
-                        ? Icon(
-                            Icons.check,
-                            color: _onAccent(p.accent),
-                            size: 22,
-                          )
-                        : null,
+                      const SizedBox(height: 4),
+                      Text(
+                        p.label,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(p.label, style: Theme.of(context).textTheme.labelSmall),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
       ],
     );

@@ -83,15 +83,15 @@ class _NaszBudzetDomowyAppState extends ConsumerState<NaszBudzetDomowyApp>
     final router = ref.watch(routerProvider);
     final variant = ref.watch(themeVariantProvider);
     final mode = ref.watch(themeModeProvider);
-    // Akcent dla Mangi (3-4 zestawy kolorów); inne motywy ignorują.
-    final mangaAccent = variant == AppThemeVariant.manga
-        ? ref.watch(mangaPaletteProvider).accent
+    // Zestaw kolorów dla Mangi (tło + akcent); inne motywy ignorują.
+    final mangaPalette = variant == AppThemeVariant.manga
+        ? ref.watch(mangaPaletteProvider)
         : null;
     return MaterialApp.router(
       title: 'Nasz budżet domowy',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(variant, mangaAccent: mangaAccent),
-      darkTheme: AppTheme.dark(variant, mangaAccent: mangaAccent),
+      theme: AppTheme.light(variant, mangaPalette: mangaPalette),
+      darkTheme: AppTheme.dark(variant, mangaPalette: mangaPalette),
       themeMode: mode,
       routerConfig: router,
       localizationsDelegates: const [

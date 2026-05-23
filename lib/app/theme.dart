@@ -33,14 +33,12 @@ enum AppThemeVariant {
   ),
   cyber(
     label: 'Cyber',
-    description:
-        'Neonowy zielony + czarne OLED. Cyberpunk 2026 — najlepszy w '
+    description: 'Neonowy zielony + czarne OLED. Cyberpunk 2026 — najlepszy w '
         'trybie ciemnym.',
   ),
   synthwave(
     label: 'Synthwave',
-    description:
-        'Magenta + cyan retro 80s. Mocny vibe, świetlist w ciemnym.',
+    description: 'Magenta + cyan retro 80s. Mocny vibe, świetlist w ciemnym.',
   ),
   galaktyka(
     label: 'Galaktyka',
@@ -56,20 +54,17 @@ enum AppThemeVariant {
   ),
   plastelina(
     label: 'Plastelina',
-    description:
-        'Miękkie, puszyste karty jak z gliny (claymorphism). Ciepłe '
+    description: 'Miękkie, puszyste karty jak z gliny (claymorphism). Ciepłe '
         'pastele, delikatne cienie.',
   ),
   aurora(
     label: 'Aurora',
-    description:
-        'Minimal premium: dużo bieli/czerni, wielka typografia, jeden '
+    description: 'Minimal premium: dużo bieli/czerni, wielka typografia, jeden '
         'żywy akcent. Czysto i nowocześnie.',
   ),
   dragonBall(
     label: 'Dragon Ball',
-    description:
-        'Świat Dragon Ball: pomarańcz gi i energia ki, złote akcenty, '
+    description: 'Świat Dragon Ball: pomarańcz gi i energia ki, złote akcenty, '
         'gruba „anime" typografia. Smocza kula w rogu.',
   ),
   pokemon(
@@ -80,8 +75,7 @@ enum AppThemeVariant {
   ),
   manga(
     label: 'Manga',
-    description:
-        'Czarno-biały komiks: grube czarne kontury, kropkowy raster '
+    description: 'Czarno-biały komiks: grube czarne kontury, kropkowy raster '
         '(screentone), czerwony akcent, komiksowe ikony i czcionka.',
   );
 
@@ -121,18 +115,24 @@ enum AppThemeVariant {
       };
 }
 
-/// Zestawy kolorów akcentu dla motywu „Manga" (jak różne wersje zegarków
-/// GA-2100 MNG). Zmienia kolor wiodący; reszta zostaje czarno-biała.
+/// Zestawy kolorów dla motywu „Manga" (jak wersje zegarków GA-2100 MNG).
+/// Każdy ma kolor akcentu (przyciski/akcje) i kolor tła w trybie jasnym.
+/// W trybie ciemnym tło zawsze = czysta czerń OLED.
 enum MangaPalette {
-  czerwien('Czerwień', Color(0xFFE5241B)),
-  blekit('Błękit', Color(0xFF2D7FF0)),
-  zloty('Złoty', Color(0xFFF5B500)),
-  mieta('Mięta', Color(0xFF12A66B));
+  biel('Biel', accent: Color(0xFFFF3366), background: Color(0xFFFFFFFF)),
+  blekit('Błękit', accent: Color(0xFFFF3366), background: Color(0xFF59C2ED)),
+  volt('Volt', accent: Color(0xFFCBD400), background: Color(0xFFFFFFFF)),
+  klasyk('Czerwień', accent: Color(0xFFE5241B), background: Color(0xFFFFFFFF));
 
-  const MangaPalette(this.label, this.accent);
+  const MangaPalette(
+    this.label, {
+    required this.accent,
+    required this.background,
+  });
 
   final String label;
   final Color accent;
+  final Color background;
 }
 
 /// Builder ThemeData dla wszystkich wariantów [AppThemeVariant]
@@ -145,22 +145,41 @@ class AppTheme {
   static const Color incomeAccent = Color(0xFF4AE89E);
   static const Color expenseAccent = Color(0xFFE07A7A);
 
-  static ThemeData light(AppThemeVariant variant, {Color? mangaAccent}) =>
-      _build(variant, Brightness.light, mangaAccent);
-  static ThemeData dark(AppThemeVariant variant, {Color? mangaAccent}) =>
-      _build(variant, Brightness.dark, mangaAccent);
+  static ThemeData light(
+    AppThemeVariant variant, {
+    MangaPalette? mangaPalette,
+  }) =>
+      _build(variant, Brightness.light, mangaPalette);
+  static ThemeData dark(
+    AppThemeVariant variant, {
+    MangaPalette? mangaPalette,
+  }) =>
+      _build(variant, Brightness.dark, mangaPalette);
 
   static ThemeData _build(
     AppThemeVariant variant,
     Brightness brightness, [
-    Color? mangaAccent,
+    MangaPalette? mangaPalette,
   ]) {
-    final spec = _specFor(variant, brightness, mangaAccent);
+    final spec = _specFor(variant, brightness, mangaPalette);
 
-    final colorScheme = ColorScheme.fromSeed(
+    var colorScheme = ColorScheme.fromSeed(
       seedColor: spec.seed,
       brightness: brightness,
     ).copyWith(surface: spec.surface);
+
+    // Manga = „krzykliwy" komiks: kolor akcentu MUSI być żywy (Material
+    // domyślnie go przygasza), a tekst na nim czarny/biały wg jasności.
+    if (variant == AppThemeVariant.manga) {
+      final onAccent =
+          spec.seed.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+      colorScheme = colorScheme.copyWith(
+        primary: spec.seed,
+        onPrimary: onAccent,
+        secondary: spec.seed,
+        onSecondary: onAccent,
+      );
+    }
 
     final base = brightness == Brightness.light
         ? ThemeData.light(useMaterial3: true)
@@ -174,16 +193,17 @@ class AppTheme {
         ? BorderSide(color: spec.cardBorder!, width: spec.cardBorderWidth)
         : BorderSide.none;
     final isComic = variant.isComic;
+    final isManga = variant == AppThemeVariant.manga;
 
-    // Kształt przycisków zależny od motywu — żeby motywy różniły się nie
-    // tylko kolorem: pigułka (clay), ostre prostokąty (mono/cyber/terminal),
-    // zaokrąglone (reszta). Kredka dokłada gruby czarny obrys.
+    // Kształt przycisków zależny od motywu: pigułka (clay), ośmiokąt „CasiOak"
+    // (Manga — ścięte rogi), ostre prostokąty (mono/cyber), zaokrąglone (reszta).
     final buttonShape = switch (variant) {
       AppThemeVariant.plastelina => StadiumBorder(side: borderSide),
-      AppThemeVariant.mono ||
-      AppThemeVariant.cyber ||
-      AppThemeVariant.manga =>
-        RoundedRectangleBorder(
+      AppThemeVariant.manga => BeveledRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: borderSide,
+        ),
+      AppThemeVariant.mono || AppThemeVariant.cyber => RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(2),
           side: borderSide,
         ),
@@ -192,6 +212,17 @@ class AppTheme {
           side: borderSide,
         ),
     };
+
+    // Kształt kart: Manga = ośmiokątna koperta (bevel), reszta = zaokrąglona.
+    final ShapeBorder cardShape = isManga
+        ? BeveledRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: borderSide,
+          )
+        : RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
+            side: borderSide,
+          );
 
     return base.copyWith(
       colorScheme: colorScheme,
@@ -202,10 +233,7 @@ class AppTheme {
         elevation: spec.cardElevation,
         shadowColor:
             spec.cardElevation > 0 ? colorScheme.shadow : Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadius),
-          side: borderSide,
-        ),
+        shape: cardShape,
         margin: EdgeInsets.zero,
       ),
       appBarTheme: AppBarTheme(
@@ -264,7 +292,7 @@ class AppTheme {
   static _ThemeSpec _specFor(
     AppThemeVariant variant,
     Brightness brightness, [
-    Color? mangaAccent,
+    MangaPalette? mangaPalette,
   ]) {
     final isDark = brightness == Brightness.dark;
     return switch (variant) {
@@ -397,15 +425,18 @@ class AppTheme {
       // akcent z palety, grube kontury, gęsty raster, ostre panele (radius 0)
       // i komiksowe nagłówki (Bangers). Tryb ciemny = „manga nocą".
       AppThemeVariant.manga => _ThemeSpec(
-          seed: mangaAccent ?? const Color(0xFFE5241B),
-          background:
-              isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF),
+          seed: mangaPalette?.accent ?? const Color(0xFFFF3366),
+          // Tło wg palety w trybie jasnym (biel / sky blue), czerń OLED w
+          // ciemnym. Karty zawsze białe (kontrast jak modal na zegarku).
+          background: isDark
+              ? const Color(0xFF000000)
+              : (mangaPalette?.background ?? const Color(0xFFFFFFFF)),
           surface: isDark ? const Color(0xFF121212) : const Color(0xFFFFFFFF),
           cardElevation: 0,
           cardBorder:
-              isDark ? const Color(0xFFFFFFFF) : const Color(0xFF111111),
+              isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
           cardBorderWidth: 3,
-          headingFontFamily: 'Bangers',
+          fontFamily: 'SpaceMono',
         ),
     };
   }
