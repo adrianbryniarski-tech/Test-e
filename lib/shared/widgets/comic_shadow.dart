@@ -9,7 +9,7 @@ Color comicInk(AppThemeVariant variant, Brightness brightness) {
   final dark = brightness == Brightness.dark;
   return switch (variant) {
     AppThemeVariant.manga =>
-      dark ? const Color(0xFFF2F2F2) : const Color(0xFF111111),
+      dark ? const Color(0xFFFFFFFF) : const Color(0xFF111111),
     _ => dark ? const Color(0xFFFFE0C2) : const Color(0xFF231A12),
   };
 }
@@ -31,13 +31,15 @@ class ComicShadow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final variant = ref.watch(themeVariantProvider);
     if (!variant.isComic) return child;
+    // Manga = ostre kanty → cień prawie kwadratowy (pasuje do panelu).
+    final radius = variant == AppThemeVariant.manga ? 1.0 : borderRadius;
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.circular(radius),
         boxShadow: [
           BoxShadow(
             color: comicInk(variant, Theme.of(context).brightness),
-            offset: const Offset(4, 4),
+            offset: const Offset(5, 5),
           ),
         ],
       ),
