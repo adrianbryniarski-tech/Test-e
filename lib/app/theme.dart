@@ -121,6 +121,20 @@ enum AppThemeVariant {
       };
 }
 
+/// Zestawy kolorów akcentu dla motywu „Manga" (jak różne wersje zegarków
+/// GA-2100 MNG). Zmienia kolor wiodący; reszta zostaje czarno-biała.
+enum MangaPalette {
+  czerwien('Czerwień', Color(0xFFE5241B)),
+  blekit('Błękit', Color(0xFF2D7FF0)),
+  zloty('Złoty', Color(0xFFF5B500)),
+  mieta('Mięta', Color(0xFF12A66B));
+
+  const MangaPalette(this.label, this.accent);
+
+  final String label;
+  final Color accent;
+}
+
 /// Builder ThemeData dla wszystkich wariantów [AppThemeVariant]
 /// + jasny/ciemny tryb.
 class AppTheme {
@@ -131,13 +145,17 @@ class AppTheme {
   static const Color incomeAccent = Color(0xFF4AE89E);
   static const Color expenseAccent = Color(0xFFE07A7A);
 
-  static ThemeData light(AppThemeVariant variant) =>
-      _build(variant, Brightness.light);
-  static ThemeData dark(AppThemeVariant variant) =>
-      _build(variant, Brightness.dark);
+  static ThemeData light(AppThemeVariant variant, {Color? mangaAccent}) =>
+      _build(variant, Brightness.light, mangaAccent);
+  static ThemeData dark(AppThemeVariant variant, {Color? mangaAccent}) =>
+      _build(variant, Brightness.dark, mangaAccent);
 
-  static ThemeData _build(AppThemeVariant variant, Brightness brightness) {
-    final spec = _specFor(variant, brightness);
+  static ThemeData _build(
+    AppThemeVariant variant,
+    Brightness brightness, [
+    Color? mangaAccent,
+  ]) {
+    final spec = _specFor(variant, brightness, mangaAccent);
 
     final colorScheme = ColorScheme.fromSeed(
       seedColor: spec.seed,
@@ -162,7 +180,10 @@ class AppTheme {
     // zaokrąglone (reszta). Kredka dokłada gruby czarny obrys.
     final buttonShape = switch (variant) {
       AppThemeVariant.plastelina => StadiumBorder(side: borderSide),
-      AppThemeVariant.mono || AppThemeVariant.cyber => RoundedRectangleBorder(
+      AppThemeVariant.mono ||
+      AppThemeVariant.cyber ||
+      AppThemeVariant.manga =>
+        RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(2),
           side: borderSide,
         ),
@@ -240,7 +261,11 @@ class AppTheme {
     );
   }
 
-  static _ThemeSpec _specFor(AppThemeVariant variant, Brightness brightness) {
+  static _ThemeSpec _specFor(
+    AppThemeVariant variant,
+    Brightness brightness, [
+    Color? mangaAccent,
+  ]) {
     final isDark = brightness == Brightness.dark;
     return switch (variant) {
       AppThemeVariant.spokojny => _ThemeSpec(
@@ -371,14 +396,14 @@ class AppTheme {
       // Manga / komiks — biel + czerń, czerwony akcent, grube czarne kontury,
       // kropkowy raster (w tle) i komiksowe nagłówki (Bangers).
       AppThemeVariant.manga => _ThemeSpec(
-          seed: const Color(0xFFE5241B),
+          seed: mangaAccent ?? const Color(0xFFE5241B),
           background:
               isDark ? const Color(0xFF0E0E0E) : const Color(0xFFFFFFFF),
           surface: isDark ? const Color(0xFF171717) : const Color(0xFFFFFFFF),
           cardElevation: 0,
           cardBorder:
               isDark ? const Color(0xFFF2F2F2) : const Color(0xFF111111),
-          cardBorderWidth: 2.5,
+          cardBorderWidth: 3,
           headingFontFamily: 'Bangers',
         ),
     };
@@ -399,7 +424,7 @@ class AppTheme {
       AppThemeVariant.aurora => 20,
       AppThemeVariant.dragonBall => 14, // chunky, energetyczne
       AppThemeVariant.pokemon => 18, // przyjazne, okrągławe
-      AppThemeVariant.manga => 10, // komiksowe panele, dość ostre
+      AppThemeVariant.manga => 4, // komiksowe panele — ostre jak na zegarkach
     };
   }
 

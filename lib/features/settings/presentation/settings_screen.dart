@@ -81,6 +81,17 @@ class SettingsScreen extends ConsumerWidget {
               );
             },
           ),
+          if (variant == AppThemeVariant.manga) ...[
+            const SizedBox(height: 20),
+            Text(
+              'Kolor motywu Manga',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const _MangaPaletteRow(),
+          ],
           const SizedBox(height: 32),
           Text(
             'Tryb jasny / ciemny',
@@ -310,6 +321,58 @@ class _Dot extends StatelessWidget {
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
+}
+
+/// Rząd próbek kolorów akcentu dla motywu „Manga".
+class _MangaPaletteRow extends ConsumerWidget {
+  const _MangaPaletteRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(mangaPaletteProvider);
+    final ink = Theme.of(context).colorScheme.onSurface;
+    return Row(
+      children: [
+        for (final p in MangaPalette.values)
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () => ref.read(mangaPaletteProvider.notifier).set(p),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: p.accent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: ink,
+                        width: selected == p ? 3.5 : 1.5,
+                      ),
+                    ),
+                    child: selected == p
+                        ? Icon(
+                            Icons.check,
+                            color: _onAccent(p.accent),
+                            size: 22,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(p.label, style: Theme.of(context).textTheme.labelSmall),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // Czarny lub biały „ptaszek" zależnie od jasności akcentu.
+  Color _onAccent(Color c) =>
+      c.computeLuminance() > 0.5 ? Colors.black : Colors.white;
 }
 
 class _HouseholdInfoCard extends ConsumerWidget {
