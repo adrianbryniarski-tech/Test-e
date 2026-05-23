@@ -8,6 +8,7 @@ import 'package:nasz_budzet_domowy/features/categories/presentation/widgets/icon
 import 'package:nasz_budzet_domowy/features/household/application/household_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Bottom sheet do tworzenia / edycji kategorii. Edycja systemowej
 /// (`isSystem=true`) jest blokowana w UI — wywołanie z taką kategorią
@@ -212,12 +213,12 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
                 ButtonSegment(
                   value: TransactionType.expense,
                   label: Text('Wydatek'),
-                  icon: Icon(Icons.south),
+                  icon: AppIcon(Icons.south),
                 ),
                 ButtonSegment(
                   value: TransactionType.income,
                   label: Text('Dochód'),
-                  icon: Icon(Icons.north),
+                  icon: AppIcon(Icons.north),
                 ),
               ],
               selected: {_type},
@@ -248,7 +249,7 @@ class _CategoryEditSheetState extends ConsumerState<CategoryEditSheet> {
                 isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Kategoria nadrzędna (opcjonalnie)',
-                  prefixIcon: Icon(Icons.account_tree_outlined),
+                  prefixIcon: AppIcon(Icons.account_tree_outlined),
                 ),
                 items: [
                   const DropdownMenuItem<String?>(

@@ -165,7 +165,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             : 'Dodaj transakcję',
         child: isManga
             ? const MangaIcon(MangaIconKind.add)
-            : const Icon(Icons.add),
+            : const AppIcon(Icons.add),
       ),
     );
   }

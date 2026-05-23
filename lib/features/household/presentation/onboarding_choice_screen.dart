@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Pierwszy ekran po logowaniu (gdy user nie należy do żadnego gospodarstwa).
 ///
@@ -21,7 +22,7 @@ class OnboardingChoiceScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: 'Wyloguj',
-            icon: const Icon(Icons.logout),
+            icon: const AppIcon(Icons.logout),
             onPressed: () => ref.read(authRepositoryProvider).signOut(),
           ),
         ],
@@ -73,7 +74,7 @@ class OnboardingChoiceScreen extends ConsumerWidget {
               Center(
                 child: TextButton.icon(
                   onPressed: () => context.push('/help'),
-                  icon: const Icon(Icons.help_outline),
+                  icon: const AppIcon(Icons.help_outline),
                   label: const Text('Nie wiesz co wybrać? Zobacz pomoc'),
                 ),
               ),
@@ -138,7 +139,7 @@ class _ChoiceCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right),
+              const AppIcon(Icons.chevron_right),
             ],
           ),
         ),

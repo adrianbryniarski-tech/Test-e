@@ -9,6 +9,7 @@ import 'package:nasz_budzet_domowy/features/household/application/household_prov
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/voice_input_service.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -26,7 +27,7 @@ class SettingsScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: 'Odśwież',
-            icon: const Icon(Icons.refresh),
+            icon: const AppIcon(Icons.refresh),
             onPressed: () {
               // Inwaliduje wszystkie hh-providers + transactions/categories.
               // Bez tego po dołączeniu żony moja apka nie wiedziała.
@@ -105,17 +106,17 @@ class SettingsScreen extends ConsumerWidget {
               ButtonSegment(
                 value: ThemeMode.system,
                 label: Text('Auto'),
-                icon: Icon(Icons.brightness_auto),
+                icon: AppIcon(Icons.brightness_auto),
               ),
               ButtonSegment(
                 value: ThemeMode.light,
                 label: Text('Jasny'),
-                icon: Icon(Icons.light_mode),
+                icon: AppIcon(Icons.light_mode),
               ),
               ButtonSegment(
                 value: ThemeMode.dark,
                 label: Text('Ciemny'),
-                icon: Icon(Icons.dark_mode),
+                icon: AppIcon(Icons.dark_mode),
               ),
             ],
             selected: {mode},
@@ -186,25 +187,25 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           ComicCard(
             child: ListTile(
-              leading: const Icon(Icons.help_outline),
+              leading: const AppIcon(Icons.help_outline),
               title: const Text('Pomoc — jak to działa'),
               subtitle: const Text(
                 'Instrukcja krok po kroku: łączenie z partnerem, '
                 'voice, budżety…',
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const AppIcon(Icons.chevron_right),
               onTap: () => context.push('/help'),
             ),
           ),
           const SizedBox(height: 8),
           ComicCard(
             child: ListTile(
-              leading: const Icon(Icons.auto_awesome_outlined),
+              leading: const AppIcon(Icons.auto_awesome_outlined),
               title: const Text('Co nowego'),
               subtitle: const Text(
                 'Co się zmieniło w ostatnich aktualizacjach.',
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const AppIcon(Icons.chevron_right),
               onTap: () => context.push('/whats-new'),
             ),
           ),
@@ -517,7 +518,7 @@ class _HouseholdInfoCard extends ConsumerWidget {
                         OutlinedButton.icon(
                           onPressed: () =>
                               _confirmLeave(context, ref, householdId),
-                          icon: const Icon(Icons.logout),
+                          icon: const AppIcon(Icons.logout),
                           label: const Text('Opuść gospodarstwo'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: theme.colorScheme.error,
@@ -644,7 +645,7 @@ class _HouseholdInfoCard extends ConsumerWidget {
             iconSize: 16,
             padding: EdgeInsets.zero,
             tooltip: 'Kopiuj',
-            icon: const Icon(Icons.copy),
+            icon: const AppIcon(Icons.copy),
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: value));
             },
@@ -694,7 +695,7 @@ class _VoiceModelCardState extends State<_VoiceModelCard> {
     if (status == VoiceStatus.ready) {
       return ComicCard(
         child: ListTile(
-          leading: Icon(Icons.check_circle, color: cs.primary),
+          leading: AppIcon(Icons.check_circle, color: cs.primary),
           title: const Text('Model gotowy'),
           subtitle: const Text(
             'Mikrofon na ekranie nowej transakcji jest aktywny.',
@@ -739,7 +740,7 @@ class _VoiceModelCardState extends State<_VoiceModelCard> {
             if (_service.downloadError != null) ...[
               Row(
                 children: [
-                  Icon(Icons.error_outline, color: cs.error, size: 20),
+                  AppIcon(Icons.error_outline, color: cs.error, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -755,7 +756,7 @@ class _VoiceModelCardState extends State<_VoiceModelCard> {
             ],
             FilledButton.icon(
               onPressed: _service.downloadModel,
-              icon: const Icon(Icons.download),
+              icon: const AppIcon(Icons.download),
               label: Text(
                 _service.downloadError != null
                     ? 'Spróbuj ponownie'

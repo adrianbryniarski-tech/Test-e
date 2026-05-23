@@ -268,7 +268,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Opis (opcjonalny)',
                   hintText: 'Np. Biedronka, paliwo Orlen…',
-                  prefixIcon: Icon(Icons.short_text),
+                  prefixIcon: AppIcon(Icons.short_text),
                 ),
               ),
               TextFormField(
@@ -279,7 +279,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 maxLength: 200,
                 decoration: const InputDecoration(
                   labelText: 'Notatka (opcjonalna)',
-                  prefixIcon: Icon(Icons.notes),
+                  prefixIcon: AppIcon(Icons.notes),
                 ),
               ),
               const SizedBox(height: 8),

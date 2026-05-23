@@ -7,6 +7,7 @@ import 'package:nasz_budzet_domowy/features/onboarding/application/intro_provide
 import 'package:nasz_budzet_domowy/features/onboarding/presentation/intro_carousel.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Ekran logowania / rejestracji email+hasło. Toggle Login ↔ Sign-up,
 /// po sukcesie router automatycznie przerzuca na onboarding lub home.
@@ -116,12 +117,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     ButtonSegment(
                       value: _Mode.signIn,
                       label: Text('Zaloguj się'),
-                      icon: Icon(Icons.login),
+                      icon: AppIcon(Icons.login),
                     ),
                     ButtonSegment(
                       value: _Mode.signUp,
                       label: Text('Załóż konto'),
-                      icon: Icon(Icons.person_add_alt),
+                      icon: AppIcon(Icons.person_add_alt),
                     ),
                   ],
                   selected: {_mode},
@@ -145,7 +146,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     hintText: 'adrian@example.com',
-                    prefixIcon: Icon(Icons.email_outlined),
+                    prefixIcon: AppIcon(Icons.email_outlined),
                   ),
                   validator: (value) {
                     final v = value?.trim() ?? '';
@@ -165,7 +166,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
                     labelText: 'Hasło',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: const AppIcon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       tooltip: _showPassword
                           ? 'Ukryj hasło'

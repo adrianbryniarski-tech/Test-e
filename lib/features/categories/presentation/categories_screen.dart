@@ -8,6 +8,7 @@ import 'package:nasz_budzet_domowy/features/categories/presentation/widgets/dele
 import 'package:nasz_budzet_domowy/features/transactions/data/transaction.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Ekran zarządzania kategoriami.
 /// - 12 systemowych (lock icon, nieedytowalne).
@@ -34,7 +35,7 @@ class CategoriesScreen extends ConsumerWidget {
           actions: [
             IconButton(
               tooltip: 'Odśwież',
-              icon: const Icon(Icons.refresh),
+              icon: const AppIcon(Icons.refresh),
               onPressed: () {
                 ref.invalidate(categoriesProvider);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -47,7 +48,7 @@ class CategoriesScreen extends ConsumerWidget {
             ),
             IconButton(
               tooltip: 'Dodaj kategorię',
-              icon: const Icon(Icons.add),
+              icon: const AppIcon(Icons.add),
               onPressed: () => _openCreateSheet(context),
             ),
           ],
@@ -194,7 +195,7 @@ class _CategoryRow extends ConsumerWidget {
         : IconButton(
             visualDensity: VisualDensity.compact,
             tooltip: 'Dodaj podkategorię',
-            icon: const Icon(Icons.add, size: 20),
+            icon: const AppIcon(Icons.add, size: 20),
             onPressed: () => _openSubcategorySheet(context, category),
           );
 
@@ -207,7 +208,7 @@ class _CategoryRow extends ConsumerWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           )
-        : const Icon(Icons.chevron_right);
+        : const AppIcon(Icons.chevron_right);
 
     final tile = ListTile(
       contentPadding: EdgeInsets.only(left: isChild ? 40 : 16, right: 8),

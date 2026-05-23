@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Inline banner z komunikatem błędu — czerwony akcent, ikona ostrzeżenia,
 /// 12% opacity tła. Używany pod polem formularza zamiast `SnackBar`-a
@@ -20,7 +21,7 @@ class InlineError extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.error_outline, size: 20, color: scheme.error),
+          AppIcon(Icons.error_outline, size: 20, color: scheme.error),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
