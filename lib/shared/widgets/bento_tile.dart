@@ -30,60 +30,86 @@ class BentoTile extends ConsumerWidget {
     final tt = Theme.of(context).textTheme;
     final variant = ref.watch(themeVariantProvider);
     final isComic = variant.isComic;
-    // Manga = ostre kanty (radius ~0). Kredka/reszta — zaokrąglone.
-    final tileRadius = variant == AppThemeVariant.manga ? 2.0 : 20.0;
-    // RepaintBoundary: każdy kafelek (często z wykresem) maluje się osobno,
-    // więc przerysowanie jednego nie odświeża pozostałych.
+    final isManga = variant == AppThemeVariant.manga;
+    final ink = comicInk(variant, Theme.of(context).scaffoldBackgroundColor);
+
+    // Manga = ośmiokątna koperta (bevel) z grubym konturem; reszta zaokrąglona.
+    final ShapeBorder cardShape = isManga
+        ? BeveledRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: ink, width: 4),
+          )
+        : RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: isComic
+                ? BorderSide(color: ink, width: 2.5)
+                : BorderSide.none,
+          );
+
+    final card = Card(
+      elevation: 0,
+      color: cs.surfaceContainerHigh,
+      shape: cardShape,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: tt.labelLarge?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (trailing != null) trailing!,
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: padding,
+                child: child,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // RepaintBoundary: każdy kafelek (często z wykresem) maluje się osobno.
     return RepaintBoundary(
       child: ComicShadow(
-        borderRadius: tileRadius,
-        child: Card(
-          elevation: 0,
-          color: cs.surfaceContainerHigh,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(tileRadius),
-            side: isComic
-                ? BorderSide(
-                    color: comicInk(
-                      variant,
-                      Theme.of(context).scaffoldBackgroundColor,
-                    ),
-                    width: variant == AppThemeVariant.manga ? 3 : 2.5,
-                  )
-                : BorderSide.none,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: tt.labelLarge?.copyWith(
-                            color: cs.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
+        borderRadius: isManga ? 10 : 20,
+        child: isManga
+            ? Stack(
+                children: [
+                  card,
+                  // Druga, cienka linia wewnątrz — imituje warstwy koperty.
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Padding(
+                        padding: const EdgeInsets.all(9),
+                        child: DecoratedBox(
+                          decoration: ShapeDecoration(
+                            shape: BeveledRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              side: BorderSide(color: ink, width: 1.5),
+                            ),
                           ),
                         ),
                       ),
-                      if (trailing != null) trailing!,
-                    ],
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: padding,
-                    child: child,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+                ],
+              )
+            : card,
       ),
     );
   }

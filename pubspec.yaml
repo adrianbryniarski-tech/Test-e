@@ -113,3 +113,7 @@ flutter:
     - family: Bangers
       fonts:
         - asset: assets/fonts/Bangers.ttf
+    # Archivo Black — ciężka, wielkie wartości/nagłówki (motyw „Manga"). OFL.
+    - family: ArchivoBlack
+      fonts:
+        - asset: assets/fonts/ArchivoBlack.ttf

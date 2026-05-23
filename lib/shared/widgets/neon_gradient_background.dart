@@ -27,7 +27,7 @@ class NeonGradientBackground extends ConsumerWidget {
       // Manga = wyraźniejszy, gęstszy raster (jak screentone na zegarkach);
       // w ciemnym trybie białe kropki mocniejsze, żeby było je widać.
       final isManga = variant == AppThemeVariant.manga;
-      final alpha = isManga ? (isDark ? 0.18 : 0.13) : 0.06;
+      final alpha = isManga ? (isDark ? 0.22 : 0.13) : 0.06;
       return Stack(
         children: [
           Positioned.fill(
@@ -35,7 +35,8 @@ class NeonGradientBackground extends ConsumerWidget {
               child: CustomPaint(
                 painter: _HalftonePainter(
                   ink.withValues(alpha: alpha),
-                  gap: isManga ? 8 : 16,
+                  gap: isManga ? 20 : 16,
+                  dotFactor: isManga ? 0.16 : 0.09,
                 ),
                 isComplex: true,
               ),
@@ -101,15 +102,16 @@ class NeonGradientBackground extends ConsumerWidget {
 
 /// Rysuje równomierną siatkę kropek (efekt komiksowego rastra/halftone).
 class _HalftonePainter extends CustomPainter {
-  _HalftonePainter(this.color, {this.gap = 16});
+  _HalftonePainter(this.color, {this.gap = 16, this.dotFactor = 0.09});
 
   final Color color;
   final double gap;
+  final double dotFactor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = color;
-    final radius = gap * 0.09;
+    final radius = gap * dotFactor;
     for (var y = 0.0; y < size.height; y += gap) {
       for (var x = 0.0; x < size.width; x += gap) {
         canvas.drawCircle(Offset(x, y), radius, paint);
@@ -119,5 +121,7 @@ class _HalftonePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_HalftonePainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.gap != gap;
+      oldDelegate.color != color ||
+      oldDelegate.gap != gap ||
+      oldDelegate.dotFactor != dotFactor;
 }
