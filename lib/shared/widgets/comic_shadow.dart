@@ -32,17 +32,25 @@ class ComicShadow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final variant = ref.watch(themeVariantProvider);
     if (!variant.isComic) return child;
-    // Manga = ostre kanty → cień prawie kwadratowy (pasuje do panelu).
-    final radius = variant == AppThemeVariant.manga ? 1.0 : borderRadius;
+    final ink = comicInk(variant, Theme.of(context).scaffoldBackgroundColor);
+
+    // Manga = ośmiokąt (bevel) → cień też ścięty, twardy, przesunięty o 6px.
+    if (variant == AppThemeVariant.manga) {
+      return DecoratedBox(
+        decoration: ShapeDecoration(
+          shape: BeveledRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          shadows: [BoxShadow(color: ink, offset: const Offset(6, 6))],
+        ),
+        child: child,
+      );
+    }
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        boxShadow: [
-          BoxShadow(
-            color: comicInk(variant, Theme.of(context).scaffoldBackgroundColor),
-            offset: const Offset(5, 5),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(borderRadius),
+        boxShadow: [BoxShadow(color: ink, offset: const Offset(5, 5))],
       ),
       child: child,
     );

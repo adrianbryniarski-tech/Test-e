@@ -120,7 +120,6 @@ enum AppThemeVariant {
 /// W trybie ciemnym tło zawsze = czysta czerń OLED.
 enum MangaPalette {
   biel('Biel', accent: Color(0xFFFF3366), background: Color(0xFFFFFFFF)),
-  czern('Czerń', accent: Color(0xFFFF3366), background: Color(0xFF000000)),
   blekit('Błękit', accent: Color(0xFFFF3366), background: Color(0xFF59C2ED)),
   volt('Volt', accent: Color(0xFFCBD400), background: Color(0xFFFFFFFF)),
   klasyk('Czerwień', accent: Color(0xFFE5241B), background: Color(0xFFFFFFFF));
@@ -180,11 +179,18 @@ class AppTheme {
     if (variant == AppThemeVariant.manga) {
       final onAccent =
           spec.seed.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+      // Wszystkie warstwy powierzchni = kolor karty (spójna czerń/biel na
+      // kafelkach i wykresach, bez szarych „uniesionych" warstw Material).
       colorScheme = colorScheme.copyWith(
         primary: spec.seed,
         onPrimary: onAccent,
         secondary: spec.seed,
         onSecondary: onAccent,
+        surfaceContainerLowest: spec.surface,
+        surfaceContainerLow: spec.surface,
+        surfaceContainer: spec.surface,
+        surfaceContainerHigh: spec.surface,
+        surfaceContainerHighest: spec.surface,
       );
     }
 
@@ -207,7 +213,7 @@ class AppTheme {
     final buttonShape = switch (variant) {
       AppThemeVariant.plastelina => StadiumBorder(side: borderSide),
       AppThemeVariant.manga => BeveledRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(14),
           side: borderSide,
         ),
       AppThemeVariant.mono || AppThemeVariant.cyber => RoundedRectangleBorder(
@@ -223,7 +229,7 @@ class AppTheme {
     // Kształt kart: Manga = ośmiokątna koperta (bevel), reszta = zaokrąglona.
     final ShapeBorder cardShape = isManga
         ? BeveledRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(14),
             side: borderSide,
           )
         : RoundedRectangleBorder(
@@ -435,9 +441,9 @@ class AppTheme {
     };
   }
 
-  /// Spec motywu Manga — tło wg palety (biel / czerń / sky blue), w trybie
-  /// ciemnym wymuszona czerń OLED. Kolor kart i konturu dobrany do jasności
-  /// tła (na ciemnym → białe kontury, karty ciut jaśniejsze od tła).
+  /// Spec motywu Manga. Tryb CIEMNY = głęboka czerń OLED wszędzie (tło,
+  /// karty, wykresy). Tryb JASNY = tło wg palety (biel / sky blue). Kolor
+  /// kart i konturu dobrany do jasności tła; kontur czysto biały/czarny 3.5px.
   static _ThemeSpec _mangaSpec(bool isDark, MangaPalette? palette) {
     final background = isDark
         ? const Color(0xFF000000)
@@ -446,11 +452,13 @@ class AppTheme {
     return _ThemeSpec(
       seed: palette?.accent ?? const Color(0xFFFF3366),
       background: background,
-      surface: darkBg ? const Color(0xFF0E0E0E) : const Color(0xFFFFFFFF),
+      // Karta ledwie odróżnialna od tła — to gruby kontur ją definiuje.
+      surface: darkBg ? const Color(0xFF0A0A0A) : const Color(0xFFFFFFFF),
       cardElevation: 0,
       cardBorder: darkBg ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
-      cardBorderWidth: 3,
+      cardBorderWidth: 4,
       fontFamily: 'SpaceMono',
+      headingFontFamily: 'ArchivoBlack',
     );
   }
 
