@@ -11,6 +11,7 @@ import 'package:nasz_budzet_domowy/features/settings/application/theme_providers
 import 'package:nasz_budzet_domowy/features/transactions/presentation/transactions_list_screen.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/brand_watermark.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/glowing_button.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/neon_gradient_background.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -60,9 +61,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    // Ikona zakładki „Dashboard" zależna od motywu — anime-motywy dostają
-    // tematyczny symbol (Poké Ball / kula energii) zamiast pulpitu.
+    // Ikony nawigacji zależne od motywu. Manga → ręcznie rysowane komiksowe
+    // ikony; anime-motywy → tematyczny symbol pulpitu (Poké Ball / energia).
     final variant = ref.watch(themeVariantProvider);
+    final isManga = variant == AppThemeVariant.manga;
     final (dashIcon, dashSelectedIcon) = switch (variant) {
       AppThemeVariant.pokemon => (
           Icons.catching_pokemon_outlined,
@@ -74,6 +76,25 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ),
       _ => (Icons.dashboard_outlined, Icons.dashboard),
     };
+
+    NavigationDestination dest(
+      MangaIconKind mk,
+      IconData out,
+      IconData fill,
+      String label,
+    ) {
+      return isManga
+          ? NavigationDestination(
+              icon: MangaIcon(mk),
+              selectedIcon: MangaIcon(mk, filled: true),
+              label: label,
+            )
+          : NavigationDestination(
+              icon: Icon(out),
+              selectedIcon: Icon(fill),
+              label: label,
+            );
+    }
 
     return Scaffold(
       body: NeonGradientBackground(
@@ -94,30 +115,42 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         onDestinationSelected: (i) => setState(() => _index = i),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [
-          NavigationDestination(
-            icon: Icon(dashIcon),
-            selectedIcon: Icon(dashSelectedIcon),
-            label: 'Dashboard',
+          if (isManga)
+            dest(
+              MangaIconKind.dashboard,
+              dashIcon,
+              dashSelectedIcon,
+              'Dashboard',
+            )
+          else
+            NavigationDestination(
+              icon: Icon(dashIcon),
+              selectedIcon: Icon(dashSelectedIcon),
+              label: 'Dashboard',
+            ),
+          dest(
+            MangaIconKind.transactions,
+            Icons.receipt_long_outlined,
+            Icons.receipt_long,
+            'Transakcje',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Transakcje',
+          dest(
+            MangaIconKind.budgets,
+            Icons.savings_outlined,
+            Icons.savings,
+            'Budżety',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.savings_outlined),
-            selectedIcon: Icon(Icons.savings),
-            label: 'Budżety',
+          dest(
+            MangaIconKind.investments,
+            Icons.trending_up_outlined,
+            Icons.trending_up,
+            'Inwestycje',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.trending_up_outlined),
-            selectedIcon: Icon(Icons.trending_up),
-            label: 'Inwestycje',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.category_outlined),
-            selectedIcon: Icon(Icons.category),
-            label: 'Kategorie',
+          dest(
+            MangaIconKind.categories,
+            Icons.category_outlined,
+            Icons.category,
+            'Kategorie',
           ),
         ],
       ),
@@ -130,7 +163,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         tooltip: _index == _investmentsIndex
             ? 'Dodaj inwestycję'
             : 'Dodaj transakcję',
-        child: const Icon(Icons.add),
+        child: isManga
+            ? const MangaIcon(MangaIconKind.add)
+            : const Icon(Icons.add),
       ),
     );
   }

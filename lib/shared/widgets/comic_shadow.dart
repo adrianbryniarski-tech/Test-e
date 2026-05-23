@@ -3,14 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 
-/// Kolor „tuszu" Kredki (obrys + komiksowy cień) zależny od jasności.
-Color kredkaInk(Brightness brightness) => brightness == Brightness.dark
-    ? const Color(0xFFFFE0C2)
-    : const Color(0xFF231A12);
+/// Kolor „tuszu" motywu komiksowego (obrys + cień) zależny od wariantu i
+/// jasności. Manga = czysta czerń/biel; Kredka = ciepły grafit/krem.
+Color comicInk(AppThemeVariant variant, Brightness brightness) {
+  final dark = brightness == Brightness.dark;
+  return switch (variant) {
+    AppThemeVariant.manga =>
+      dark ? const Color(0xFFF2F2F2) : const Color(0xFF111111),
+    _ => dark ? const Color(0xFFFFE0C2) : const Color(0xFF231A12),
+  };
+}
 
 /// Dokłada twardy, przesunięty „komiksowy" cień (czarna kreska bez rozmycia)
-/// pod dzieckiem — TYLKO dla motywu „Kredka". Dla pozostałych motywów zwraca
-/// child bez zmian (zero kosztu). Promień musi pasować do zaokrąglenia karty.
+/// pod dzieckiem — tylko dla motywów komiksowych (Kredka, Manga). Dla
+/// pozostałych zwraca child bez zmian. Promień musi pasować do karty.
 class ComicShadow extends ConsumerWidget {
   const ComicShadow({
     required this.child,
@@ -23,15 +29,14 @@ class ComicShadow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (ref.watch(themeVariantProvider) != AppThemeVariant.kredka) {
-      return child;
-    }
+    final variant = ref.watch(themeVariantProvider);
+    if (!variant.isComic) return child;
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: kredkaInk(Theme.of(context).brightness),
+            color: comicInk(variant, Theme.of(context).brightness),
             offset: const Offset(4, 4),
           ),
         ],

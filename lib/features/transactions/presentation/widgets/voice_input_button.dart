@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
+import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/voice_input_service.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/voice_parser.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Ikona mikrofonu w AppBar. Po stuknięciu otwiera arkusz „Dodaj głosem"
 /// (instrukcja + przykłady + przełącznik nagrywania). Stany:
 /// - unavailable → mic_off, stuknięcie prowadzi do Ustawień (pobierz model)
 /// - loading     → spinner (model się ładuje)
 /// - inaczej     → mic, stuknięcie otwiera arkusz
-class VoiceInputButton extends StatefulWidget {
+class VoiceInputButton extends ConsumerStatefulWidget {
   const VoiceInputButton({
     required this.categories,
     required this.onResult,
@@ -20,10 +24,10 @@ class VoiceInputButton extends StatefulWidget {
   final void Function(VoiceParseResult result) onResult;
 
   @override
-  State<VoiceInputButton> createState() => _VoiceInputButtonState();
+  ConsumerState<VoiceInputButton> createState() => _VoiceInputButtonState();
 }
 
-class _VoiceInputButtonState extends State<VoiceInputButton> {
+class _VoiceInputButtonState extends ConsumerState<VoiceInputButton> {
   final _service = VoiceInputService.instance;
 
   @override
@@ -85,10 +89,12 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
       );
     }
 
+    final isManga = ref.watch(themeVariantProvider) == AppThemeVariant.manga;
     return IconButton(
       tooltip: 'Dodaj głosem',
       onPressed: _openSheet,
-      icon: const Icon(Icons.mic),
+      icon:
+          isManga ? const MangaIcon(MangaIconKind.mic) : const Icon(Icons.mic),
     );
   }
 }
@@ -96,14 +102,14 @@ class _VoiceInputButtonState extends State<VoiceInputButton> {
 /// Arkusz nagrywania: instrukcja, przykłady komend i duży przycisk
 /// stuknij-by-nagrać / stuknij-by-zakończyć. Po zakończeniu zwraca
 /// transkrypt przez `Navigator.pop`.
-class _VoiceSheet extends StatefulWidget {
+class _VoiceSheet extends ConsumerStatefulWidget {
   const _VoiceSheet();
 
   @override
-  State<_VoiceSheet> createState() => _VoiceSheetState();
+  ConsumerState<_VoiceSheet> createState() => _VoiceSheetState();
 }
 
-class _VoiceSheetState extends State<_VoiceSheet> {
+class _VoiceSheetState extends ConsumerState<_VoiceSheet> {
   final _service = VoiceInputService.instance;
   bool _closing = false;
 
@@ -187,11 +193,20 @@ class _VoiceSheetState extends State<_VoiceSheet> {
                         padding: EdgeInsets.all(32),
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Icon(
-                        listening ? Icons.stop : Icons.mic,
-                        size: 44,
-                        color: listening ? cs.onError : cs.onPrimaryContainer,
-                      ),
+                    : (!listening &&
+                            ref.watch(themeVariantProvider) ==
+                                AppThemeVariant.manga)
+                        ? MangaIcon(
+                            MangaIconKind.mic,
+                            size: 44,
+                            color: cs.onPrimaryContainer,
+                          )
+                        : Icon(
+                            listening ? Icons.stop : Icons.mic,
+                            size: 44,
+                            color:
+                                listening ? cs.onError : cs.onPrimaryContainer,
+                          ),
               ),
             ),
           ),
@@ -250,8 +265,8 @@ class _VoiceSheetState extends State<_VoiceSheet> {
           Text(
             'Rozumiem: kwotę, datę (dziś / wczoraj / „13 marca"), sklep lub '
             'nazwę kategorii, oraz dochód (np. „pensja", „wpłynęło").',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: cs.onSurfaceVariant),
+            style:
+                theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
         ],
       ),

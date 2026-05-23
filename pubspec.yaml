@@ -109,3 +109,7 @@ flutter:
         - asset: assets/fonts/SpaceMono.ttf
         - asset: assets/fonts/SpaceMono-Bold.ttf
           weight: 700
+    # Bangers — komiksowa, nagłówki motywu „Manga". OFL 1.1.
+    - family: Bangers
+      fonts:
+        - asset: assets/fonts/Bangers.ttf

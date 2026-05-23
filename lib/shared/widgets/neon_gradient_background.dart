@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 
 /// Owija child w tło zależne od motywu:
@@ -18,10 +17,10 @@ class NeonGradientBackground extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final variant = ref.watch(themeVariantProvider);
 
-    // Komiksowy raster kropek dla „Kredki". RepaintBoundary + isComplex →
-    // Skia cache'uje raster i nie przerysowuje go przy każdej klatce treści
-    // (inaczej ~1500 kropek malowanych co scroll = zauważalne przycinanie).
-    if (variant == AppThemeVariant.kredka) {
+    // Komiksowy raster kropek dla motywów komiksowych (Kredka, Manga).
+    // RepaintBoundary + isComplex → Skia cache'uje raster i nie przerysowuje
+    // go przy każdej klatce treści (inaczej ~1500 kropek co scroll = zacięcia).
+    if (variant.isComic) {
       final ink = Theme.of(context).colorScheme.onSurface;
       return Stack(
         children: [

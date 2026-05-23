@@ -77,12 +77,23 @@ enum AppThemeVariant {
     description:
         'Świat Pokémon: błękit i czerwień Poké Ball, elektryczny żółty, '
         'okrągła przyjazna czcionka. Poké Ball w rogu.',
+  ),
+  manga(
+    label: 'Manga',
+    description:
+        'Czarno-biały komiks: grube czarne kontury, kropkowy raster '
+        '(screentone), czerwony akcent, komiksowe ikony i czcionka.',
   );
 
   const AppThemeVariant({required this.label, required this.description});
 
   final String label;
   final String description;
+
+  /// Motywy „komiksowe" — grube czarne kontury, kropkowy raster (halftone)
+  /// i twardy przesunięty cień kart. Kredka i Manga.
+  bool get isComic =>
+      this == AppThemeVariant.kredka || this == AppThemeVariant.manga;
 
   /// Czy motyw używa "premium" efektów neon: glow buttons, animated borders.
   /// Tylko dla 3 neon-tematów.
@@ -144,7 +155,7 @@ class AppTheme {
     final borderSide = spec.cardBorder != null
         ? BorderSide(color: spec.cardBorder!, width: spec.cardBorderWidth)
         : BorderSide.none;
-    final isKredka = variant == AppThemeVariant.kredka;
+    final isComic = variant.isComic;
 
     // Kształt przycisków zależny od motywu — żeby motywy różniły się nie
     // tylko kolorem: pigułka (clay), ostre prostokąty (mono/cyber/terminal),
@@ -190,7 +201,7 @@ class AppTheme {
           shape: buttonShape,
           textStyle: TextStyle(
             fontSize: 16,
-            fontWeight: isKredka ? FontWeight.w700 : FontWeight.w600,
+            fontWeight: isComic ? FontWeight.w700 : FontWeight.w600,
           ),
         ),
       ),
@@ -198,7 +209,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(0, 52),
           shape: buttonShape,
-          side: isKredka ? borderSide : null,
+          side: isComic ? borderSide : null,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -221,7 +232,7 @@ class AppTheme {
         backgroundColor: spec.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius * 1.2),
-          side: isKredka
+          side: isComic
               ? borderSide
               : BorderSide(color: colorScheme.outlineVariant),
         ),
@@ -356,6 +367,20 @@ class AppTheme {
           cardElevation: 1,
           fontFamily: 'Baloo2',
         ),
+
+      // Manga / komiks — biel + czerń, czerwony akcent, grube czarne kontury,
+      // kropkowy raster (w tle) i komiksowe nagłówki (Bangers).
+      AppThemeVariant.manga => _ThemeSpec(
+          seed: const Color(0xFFE5241B),
+          background:
+              isDark ? const Color(0xFF0E0E0E) : const Color(0xFFFFFFFF),
+          surface: isDark ? const Color(0xFF171717) : const Color(0xFFFFFFFF),
+          cardElevation: 0,
+          cardBorder:
+              isDark ? const Color(0xFFF2F2F2) : const Color(0xFF111111),
+          cardBorderWidth: 2.5,
+          headingFontFamily: 'Bangers',
+        ),
     };
   }
 
@@ -374,6 +399,7 @@ class AppTheme {
       AppThemeVariant.aurora => 20,
       AppThemeVariant.dragonBall => 14, // chunky, energetyczne
       AppThemeVariant.pokemon => 18, // przyjazne, okrągławe
+      AppThemeVariant.manga => 10, // komiksowe panele, dość ostre
     };
   }
 
