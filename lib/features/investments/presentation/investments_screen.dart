@@ -10,6 +10,7 @@ import 'package:nasz_budzet_domowy/features/investments/data/investment_reposito
 import 'package:nasz_budzet_domowy/features/investments/presentation/widgets/portfolio_chart.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Zakładka Inwestycje: wartość portfela + wykres + lista pozycji
 /// z zyskiem/stratą. Kursy z CoinGecko/NBP/stooq (pull-to-refresh).
@@ -80,7 +81,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
             else
               IconButton(
                 tooltip: 'Odśwież kursy',
-                icon: const Icon(Icons.refresh),
+                icon: const AppIcon(Icons.refresh),
                 onPressed: () => ref.invalidate(pricesProvider),
               ),
           ],

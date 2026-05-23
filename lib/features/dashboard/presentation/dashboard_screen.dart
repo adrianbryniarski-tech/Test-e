@@ -16,6 +16,7 @@ import 'package:nasz_budzet_domowy/features/household/presentation/invite_partne
 import 'package:nasz_budzet_domowy/features/investments/application/investment_providers.dart';
 import 'package:nasz_budzet_domowy/features/transactions/application/transaction_providers.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/sync_status_indicator.dart';
 
 /// Ekran główny — bento grid z podsumowaniem finansów.
@@ -43,7 +44,7 @@ class DashboardScreen extends ConsumerWidget {
             const SyncStatusIndicator(),
             IconButton(
               tooltip: 'Odśwież',
-              icon: const Icon(Icons.refresh),
+              icon: const AppIcon(Icons.refresh),
               onPressed: () {
                 ref
                   ..invalidate(transactionsProvider)
@@ -59,7 +60,7 @@ class DashboardScreen extends ConsumerWidget {
             if (householdId != null)
               IconButton(
                 tooltip: 'Zaproś partnera',
-                icon: const Icon(Icons.person_add_alt),
+                icon: const AppIcon(Icons.person_add_alt),
                 onPressed: () => showModalBottomSheet<void>(
                   context: context,
                   isScrollControlled: true,
@@ -67,7 +68,7 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
+              icon: const AppIcon(Icons.more_vert),
               onSelected: (v) async {
                 if (v == 'settings') {
                   await context.push<void>('/settings');
@@ -79,7 +80,7 @@ class DashboardScreen extends ConsumerWidget {
                 PopupMenuItem(
                   value: 'settings',
                   child: ListTile(
-                    leading: Icon(Icons.settings_outlined),
+                    leading: AppIcon(Icons.settings_outlined),
                     title: Text('Ustawienia'),
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -87,7 +88,7 @@ class DashboardScreen extends ConsumerWidget {
                 PopupMenuItem(
                   value: 'logout',
                   child: ListTile(
-                    leading: Icon(Icons.logout),
+                    leading: AppIcon(Icons.logout),
                     title: Text('Wyloguj'),
                     contentPadding: EdgeInsets.zero,
                   ),
