@@ -687,11 +687,17 @@ class _Halftone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Theme.of(context).colorScheme.surface,
-      child: CustomPaint(
-        size: Size.infinite,
-        painter: _HalftoneFill(ink: ink, spacing: dotSpacing, dotFactor: dot),
+    // RepaintBoundary + isComplex → Skia cache'uje raster jako gotowy obrazek
+    // (dziesiątki kropek × kilkanaście słupków = inaczej zacięcia przy każdej
+    // klatce/scrollu).
+    return RepaintBoundary(
+      child: ColoredBox(
+        color: Theme.of(context).colorScheme.surface,
+        child: CustomPaint(
+          size: Size.infinite,
+          isComplex: true,
+          painter: _HalftoneFill(ink: ink, spacing: dotSpacing, dotFactor: dot),
+        ),
       ),
     );
   }
