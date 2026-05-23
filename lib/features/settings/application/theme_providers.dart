@@ -51,7 +51,7 @@ class MangaPaletteNotifier extends Notifier<MangaPalette> {
   @override
   MangaPalette build() {
     _load();
-    return MangaPalette.czerwien;
+    return MangaPalette.biel;
   }
 
   Future<void> _load() async {
@@ -60,7 +60,7 @@ class MangaPaletteNotifier extends Notifier<MangaPalette> {
     if (name == null) return;
     final loaded = MangaPalette.values.firstWhere(
       (p) => p.name == name,
-      orElse: () => MangaPalette.czerwien,
+      orElse: () => MangaPalette.biel,
     );
     if (loaded != state) state = loaded;
   }

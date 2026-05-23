@@ -27,7 +27,7 @@ class NeonGradientBackground extends ConsumerWidget {
       // Manga = wyraźniejszy, gęstszy raster (jak screentone na zegarkach);
       // w ciemnym trybie białe kropki mocniejsze, żeby było je widać.
       final isManga = variant == AppThemeVariant.manga;
-      final alpha = isManga ? (isDark ? 0.16 : 0.10) : 0.06;
+      final alpha = isManga ? (isDark ? 0.18 : 0.13) : 0.06;
       return Stack(
         children: [
           Positioned.fill(
@@ -35,7 +35,7 @@ class NeonGradientBackground extends ConsumerWidget {
               child: CustomPaint(
                 painter: _HalftonePainter(
                   ink.withValues(alpha: alpha),
-                  gap: isManga ? 13 : 16,
+                  gap: isManga ? 8 : 16,
                 ),
                 isComplex: true,
               ),
