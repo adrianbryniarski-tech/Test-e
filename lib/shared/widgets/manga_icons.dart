@@ -2,7 +2,50 @@
 // niż wymuszone kaskady.
 // ignore_for_file: cascade_invocations
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
+import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
+
+/// Ikona aplikacji, która w motywie „Manga" automatycznie zamienia systemową
+/// ikonę Material na ręcznie rysowaną komiksową (jeśli mamy jej odpowiednik).
+/// W innych motywach — zwykła [Icon]. Dzięki temu „komiksizacja" ekranu to
+/// podmiana `Icon(` → `AppIcon(`.
+class AppIcon extends ConsumerWidget {
+  const AppIcon(this.icon, {this.size = 24, this.color, super.key});
+
+  final IconData icon;
+  final double size;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(themeVariantProvider) == AppThemeVariant.manga) {
+      final kind = _mangaKindFor(icon);
+      if (kind != null) {
+        return MangaIcon(kind, size: size, color: color);
+      }
+    }
+    return Icon(icon, size: size, color: color);
+  }
+}
+
+MangaIconKind? _mangaKindFor(IconData icon) {
+  if (icon == Icons.refresh) return MangaIconKind.refresh;
+  if (icon == Icons.person_add_alt || icon == Icons.person_add) {
+    return MangaIconKind.invite;
+  }
+  if (icon == Icons.more_vert) return MangaIconKind.menu;
+  if (icon == Icons.settings_outlined || icon == Icons.settings) {
+    return MangaIconKind.settings;
+  }
+  if (icon == Icons.logout) return MangaIconKind.logout;
+  if (icon == Icons.add) return MangaIconKind.add;
+  if (icon == Icons.mic) return MangaIconKind.mic;
+  return null;
+}
 
 /// Rodzaje komiksowych ikon rysowanych ręcznie (motyw „Manga").
 enum MangaIconKind {
@@ -13,6 +56,11 @@ enum MangaIconKind {
   categories,
   add,
   mic,
+  refresh,
+  invite,
+  menu,
+  settings,
+  logout,
 }
 
 /// Ikona w stylu komiksowym/manga — grube czarne kontury rysowane na canvasie.
@@ -80,6 +128,16 @@ class _MangaIconPainter extends CustomPainter {
         _add(canvas, s, stroke);
       case MangaIconKind.mic:
         _mic(canvas, s, stroke, fill);
+      case MangaIconKind.refresh:
+        _refresh(canvas, s, stroke);
+      case MangaIconKind.invite:
+        _invite(canvas, s, stroke, fill);
+      case MangaIconKind.menu:
+        _menu(canvas, s);
+      case MangaIconKind.settings:
+        _settings(canvas, s, stroke);
+      case MangaIconKind.logout:
+        _logout(canvas, s, stroke);
     }
   }
 
@@ -201,6 +259,85 @@ class _MangaIconPainter extends CustomPainter {
         Offset(s * 0.64, s * 0.86),
         stroke,
       );
+  }
+
+  // Odświeżanie: kolista strzałka.
+  void _refresh(Canvas c, double s, Paint stroke) {
+    final rect = Rect.fromCircle(
+      center: Offset(s * 0.5, s * 0.5),
+      radius: s * 0.3,
+    );
+    c.drawArc(rect, -math.pi * 0.35, math.pi * 1.6, false, stroke);
+    // Grot na końcu łuku (góra-prawo).
+    const end = -math.pi * 0.35;
+    final ex = s * 0.5 + math.cos(end) * s * 0.3;
+    final ey = s * 0.5 + math.sin(end) * s * 0.3;
+    final head = Path()
+      ..moveTo(ex - s * 0.14, ey - s * 0.02)
+      ..lineTo(ex, ey)
+      ..lineTo(ex + s * 0.02, ey - s * 0.15);
+    c.drawPath(head, stroke);
+  }
+
+  // Zaproszenie: osoba + plus.
+  void _invite(Canvas c, double s, Paint stroke, Paint fill) {
+    c.drawCircle(Offset(s * 0.4, s * 0.34), s * 0.13, stroke);
+    final body = Path()
+      ..moveTo(s * 0.22, s * 0.76)
+      ..arcToPoint(
+        Offset(s * 0.58, s * 0.76),
+        radius: Radius.circular(s * 0.2),
+      );
+    c.drawPath(body, stroke);
+    final p = Paint()
+      ..color = stroke.color
+      ..strokeWidth = s * 0.085
+      ..strokeCap = StrokeCap.round;
+    c.drawLine(Offset(s * 0.79, s * 0.36), Offset(s * 0.79, s * 0.62), p);
+    c.drawLine(Offset(s * 0.66, s * 0.49), Offset(s * 0.92, s * 0.49), p);
+  }
+
+  // Menu: trzy kropki w pionie.
+  void _menu(Canvas c, double s) {
+    final dot = Paint()..color = color;
+    for (final y in [0.24, 0.5, 0.76]) {
+      c.drawCircle(Offset(s * 0.5, s * y), s * 0.075, dot);
+    }
+  }
+
+  // Ustawienia: koło zębate.
+  void _settings(Canvas c, double s, Paint stroke) {
+    final center = Offset(s * 0.5, s * 0.5);
+    final r = s * 0.2;
+    c.drawCircle(center, r, stroke);
+    c.drawCircle(center, s * 0.075, stroke);
+    for (var i = 0; i < 8; i++) {
+      final a = i * math.pi / 4;
+      c.drawLine(
+        Offset(center.dx + math.cos(a) * r, center.dy + math.sin(a) * r),
+        Offset(
+          center.dx + math.cos(a) * (r + s * 0.11),
+          center.dy + math.sin(a) * (r + s * 0.11),
+        ),
+        stroke,
+      );
+    }
+  }
+
+  // Wyloguj: drzwi + strzałka na zewnątrz.
+  void _logout(Canvas c, double s, Paint stroke) {
+    final door = Path()
+      ..moveTo(s * 0.5, s * 0.18)
+      ..lineTo(s * 0.22, s * 0.18)
+      ..lineTo(s * 0.22, s * 0.82)
+      ..lineTo(s * 0.5, s * 0.82);
+    c.drawPath(door, stroke);
+    c.drawLine(Offset(s * 0.44, s * 0.5), Offset(s * 0.84, s * 0.5), stroke);
+    final head = Path()
+      ..moveTo(s * 0.68, s * 0.36)
+      ..lineTo(s * 0.84, s * 0.5)
+      ..lineTo(s * 0.68, s * 0.64);
+    c.drawPath(head, stroke);
   }
 
   @override
