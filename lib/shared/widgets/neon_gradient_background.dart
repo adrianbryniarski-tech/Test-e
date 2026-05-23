@@ -23,15 +23,18 @@ class NeonGradientBackground extends ConsumerWidget {
     // go przy każdej klatce treści (inaczej ~1500 kropek co scroll = zacięcia).
     if (variant.isComic) {
       final ink = Theme.of(context).colorScheme.onSurface;
-      // Manga = wyraźniejszy, gęstszy raster (jak screentone na zegarkach).
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      // Manga = wyraźniejszy, gęstszy raster (jak screentone na zegarkach);
+      // w ciemnym trybie białe kropki mocniejsze, żeby było je widać.
       final isManga = variant == AppThemeVariant.manga;
+      final alpha = isManga ? (isDark ? 0.16 : 0.10) : 0.06;
       return Stack(
         children: [
           Positioned.fill(
             child: RepaintBoundary(
               child: CustomPaint(
                 painter: _HalftonePainter(
-                  ink.withValues(alpha: isManga ? 0.11 : 0.06),
+                  ink.withValues(alpha: alpha),
                   gap: isManga ? 13 : 16,
                 ),
                 isComplex: true,

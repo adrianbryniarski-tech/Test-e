@@ -15,6 +15,7 @@ import 'package:nasz_budzet_domowy/features/transactions/presentation/widgets/vo
 import 'package:nasz_budzet_domowy/shared/widgets/category_avatar.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/loading_filled_button.dart';
+import 'package:nasz_budzet_domowy/shared/widgets/manga_icons.dart';
 
 /// Form ręcznego dodawania transakcji.
 ///
@@ -230,7 +231,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Kwota (PLN)',
                   hintText: '0,00',
-                  prefixIcon: Icon(Icons.payments_outlined),
+                  prefixIcon: AppIcon(Icons.payments_outlined),
                 ),
                 validator: (value) {
                   final v = value?.trim() ?? '';
@@ -253,7 +254,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Data',
-                    prefixIcon: Icon(Icons.calendar_today_outlined),
+                    prefixIcon: AppIcon(Icons.calendar_today_outlined),
                   ),
                   child: Text(dateLabel),
                 ),
@@ -313,12 +314,12 @@ class _TypeSelector extends StatelessWidget {
         ButtonSegment(
           value: TransactionType.expense,
           label: Text('Wydatek'),
-          icon: Icon(Icons.south_outlined),
+          icon: AppIcon(Icons.south_outlined),
         ),
         ButtonSegment(
           value: TransactionType.income,
           label: Text('Dochód'),
-          icon: Icon(Icons.north_outlined),
+          icon: AppIcon(Icons.north_outlined),
         ),
       ],
       selected: {value},
@@ -374,7 +375,7 @@ class _CategoryPickerField extends StatelessWidget {
           isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Kategoria',
-            prefixIcon: Icon(Icons.category_outlined),
+            prefixIcon: AppIcon(Icons.category_outlined),
           ),
           items: [
             for (final c in ordered)
@@ -449,7 +450,7 @@ class _CategoryFieldShell extends StatelessWidget {
     return InputDecorator(
       decoration: const InputDecoration(
         labelText: 'Kategoria',
-        prefixIcon: Icon(Icons.category_outlined),
+        prefixIcon: AppIcon(Icons.category_outlined),
       ),
       child: child,
     );

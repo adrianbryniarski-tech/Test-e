@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/comic_shadow.dart';
 
@@ -29,20 +30,22 @@ class BentoTile extends ConsumerWidget {
     final tt = Theme.of(context).textTheme;
     final variant = ref.watch(themeVariantProvider);
     final isComic = variant.isComic;
+    // Manga = ostre kanty (radius ~0). Kredka/reszta — zaokrąglone.
+    final tileRadius = variant == AppThemeVariant.manga ? 2.0 : 20.0;
     // RepaintBoundary: każdy kafelek (często z wykresem) maluje się osobno,
     // więc przerysowanie jednego nie odświeża pozostałych.
     return RepaintBoundary(
       child: ComicShadow(
-        borderRadius: 20,
+        borderRadius: tileRadius,
         child: Card(
           elevation: 0,
           color: cs.surfaceContainerHigh,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(tileRadius),
             side: isComic
                 ? BorderSide(
                     color: comicInk(variant, Theme.of(context).brightness),
-                    width: 2.5,
+                    width: variant == AppThemeVariant.manga ? 3 : 2.5,
                   )
                 : BorderSide.none,
           ),

@@ -44,6 +44,40 @@ MangaIconKind? _mangaKindFor(IconData icon) {
   if (icon == Icons.logout) return MangaIconKind.logout;
   if (icon == Icons.add) return MangaIconKind.add;
   if (icon == Icons.mic) return MangaIconKind.mic;
+  if (icon == Icons.check || icon == Icons.check_rounded) {
+    return MangaIconKind.check;
+  }
+  if (icon == Icons.close || icon == Icons.close_rounded) {
+    return MangaIconKind.close;
+  }
+  if (icon == Icons.edit_outlined || icon == Icons.edit) {
+    return MangaIconKind.edit;
+  }
+  if (icon == Icons.delete_outline || icon == Icons.delete) {
+    return MangaIconKind.delete;
+  }
+  if (icon == Icons.calendar_today || icon == Icons.calendar_month) {
+    return MangaIconKind.calendar;
+  }
+  if (icon == Icons.search) return MangaIconKind.search;
+  if (icon == Icons.category_outlined || icon == Icons.category) {
+    return MangaIconKind.categories;
+  }
+  if (icon == Icons.calendar_today_outlined) return MangaIconKind.calendar;
+  if (icon == Icons.payments_outlined || icon == Icons.savings_outlined) {
+    return MangaIconKind.budgets;
+  }
+  if (icon == Icons.north_outlined) return MangaIconKind.arrowUp;
+  if (icon == Icons.south_outlined) return MangaIconKind.arrowDown;
+  if (icon == Icons.arrow_back || icon == Icons.arrow_back_ios_new) {
+    return MangaIconKind.back;
+  }
+  if (icon == Icons.arrow_upward_rounded || icon == Icons.arrow_upward) {
+    return MangaIconKind.arrowUp;
+  }
+  if (icon == Icons.arrow_downward_rounded || icon == Icons.arrow_downward) {
+    return MangaIconKind.arrowDown;
+  }
   return null;
 }
 
@@ -61,6 +95,15 @@ enum MangaIconKind {
   menu,
   settings,
   logout,
+  check,
+  close,
+  edit,
+  delete,
+  calendar,
+  search,
+  back,
+  arrowUp,
+  arrowDown,
 }
 
 /// Ikona w stylu komiksowym/manga — grube czarne kontury rysowane na canvasie.
@@ -138,6 +181,24 @@ class _MangaIconPainter extends CustomPainter {
         _settings(canvas, s, stroke);
       case MangaIconKind.logout:
         _logout(canvas, s, stroke);
+      case MangaIconKind.check:
+        _check(canvas, s, stroke);
+      case MangaIconKind.close:
+        _close(canvas, s, stroke);
+      case MangaIconKind.edit:
+        _edit(canvas, s, stroke);
+      case MangaIconKind.delete:
+        _delete(canvas, s, stroke);
+      case MangaIconKind.calendar:
+        _calendar(canvas, s, stroke, fill);
+      case MangaIconKind.search:
+        _search(canvas, s, stroke);
+      case MangaIconKind.back:
+        _arrow(canvas, s, stroke, math.pi); // w lewo
+      case MangaIconKind.arrowUp:
+        _arrow(canvas, s, stroke, -math.pi / 2);
+      case MangaIconKind.arrowDown:
+        _arrow(canvas, s, stroke, math.pi / 2);
     }
   }
 
@@ -338,6 +399,113 @@ class _MangaIconPainter extends CustomPainter {
       ..lineTo(s * 0.84, s * 0.5)
       ..lineTo(s * 0.68, s * 0.64);
     c.drawPath(head, stroke);
+  }
+
+  // Ptaszek.
+  void _check(Canvas c, double s, Paint stroke) {
+    final p = Paint()
+      ..color = stroke.color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.13
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+    final path = Path()
+      ..moveTo(s * 0.2, s * 0.54)
+      ..lineTo(s * 0.42, s * 0.74)
+      ..lineTo(s * 0.8, s * 0.28);
+    c.drawPath(path, p);
+  }
+
+  // Krzyżyk (zamknij).
+  void _close(Canvas c, double s, Paint stroke) {
+    final p = Paint()
+      ..color = stroke.color
+      ..strokeWidth = s * 0.13
+      ..strokeCap = StrokeCap.round;
+    c.drawLine(Offset(s * 0.24, s * 0.24), Offset(s * 0.76, s * 0.76), p);
+    c.drawLine(Offset(s * 0.76, s * 0.24), Offset(s * 0.24, s * 0.76), p);
+  }
+
+  // Ołówek.
+  void _edit(Canvas c, double s, Paint stroke) {
+    final body = Path()
+      ..moveTo(s * 0.62, s * 0.18)
+      ..lineTo(s * 0.82, s * 0.38)
+      ..lineTo(s * 0.4, s * 0.8)
+      ..lineTo(s * 0.2, s * 0.8)
+      ..lineTo(s * 0.2, s * 0.6)
+      ..close();
+    c.drawPath(body, stroke);
+    c.drawLine(Offset(s * 0.55, s * 0.25), Offset(s * 0.75, s * 0.45), stroke);
+  }
+
+  // Kosz na śmieci.
+  void _delete(Canvas c, double s, Paint stroke) {
+    final lid = Paint()
+      ..color = stroke.color
+      ..strokeWidth = s * 0.1
+      ..strokeCap = StrokeCap.round;
+    c.drawLine(Offset(s * 0.2, s * 0.28), Offset(s * 0.8, s * 0.28), lid);
+    // uchwyt
+    final handle = Path()
+      ..moveTo(s * 0.4, s * 0.28)
+      ..lineTo(s * 0.42, s * 0.18)
+      ..lineTo(s * 0.58, s * 0.18)
+      ..lineTo(s * 0.6, s * 0.28);
+    c.drawPath(handle, stroke);
+    // kubeł
+    final body = Path()
+      ..moveTo(s * 0.28, s * 0.32)
+      ..lineTo(s * 0.32, s * 0.82)
+      ..lineTo(s * 0.68, s * 0.82)
+      ..lineTo(s * 0.72, s * 0.32);
+    c.drawPath(body, stroke);
+  }
+
+  // Kalendarz.
+  void _calendar(Canvas c, double s, Paint stroke, Paint fill) {
+    final body = _box(0.18, 0.22, 0.82, 0.84, s);
+    c.drawRRect(body, stroke);
+    // pasek nagłówka
+    c.drawLine(Offset(s * 0.18, s * 0.4), Offset(s * 0.82, s * 0.4), stroke);
+    // kółka „kalendarzowe"
+    final dot = Paint()..color = stroke.color;
+    c.drawCircle(Offset(s * 0.34, s * 0.18), s * 0.05, dot);
+    c.drawCircle(Offset(s * 0.66, s * 0.18), s * 0.05, dot);
+  }
+
+  // Lupa.
+  void _search(Canvas c, double s, Paint stroke) {
+    c.drawCircle(Offset(s * 0.44, s * 0.44), s * 0.22, stroke);
+    final handle = Paint()
+      ..color = stroke.color
+      ..strokeWidth = s * 0.12
+      ..strokeCap = StrokeCap.round;
+    c.drawLine(Offset(s * 0.6, s * 0.6), Offset(s * 0.8, s * 0.8), handle);
+  }
+
+  // Strzałka w kierunku `angle` (0 = w prawo).
+  void _arrow(Canvas c, double s, Paint stroke, double angle) {
+    final p = Paint()
+      ..color = stroke.color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.12
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+    c.save();
+    c.translate(s * 0.5, s * 0.5);
+    c.rotate(angle);
+    final shaft = Path()
+      ..moveTo(-s * 0.28, 0)
+      ..lineTo(s * 0.28, 0);
+    final head = Path()
+      ..moveTo(s * 0.06, -s * 0.22)
+      ..lineTo(s * 0.28, 0)
+      ..lineTo(s * 0.06, s * 0.22);
+    c
+      ..drawPath(shaft, p)
+      ..drawPath(head, p)
+      ..restore();
   }
 
   @override

@@ -393,16 +393,17 @@ class AppTheme {
           fontFamily: 'Baloo2',
         ),
 
-      // Manga / komiks — biel + czerń, czerwony akcent, grube czarne kontury,
-      // kropkowy raster (w tle) i komiksowe nagłówki (Bangers).
+      // Manga / komiks — biel + czerń (lub czysta czerń OLED w trybie ciemnym),
+      // akcent z palety, grube kontury, gęsty raster, ostre panele (radius 0)
+      // i komiksowe nagłówki (Bangers). Tryb ciemny = „manga nocą".
       AppThemeVariant.manga => _ThemeSpec(
           seed: mangaAccent ?? const Color(0xFFE5241B),
           background:
-              isDark ? const Color(0xFF0E0E0E) : const Color(0xFFFFFFFF),
-          surface: isDark ? const Color(0xFF171717) : const Color(0xFFFFFFFF),
+              isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF),
+          surface: isDark ? const Color(0xFF121212) : const Color(0xFFFFFFFF),
           cardElevation: 0,
           cardBorder:
-              isDark ? const Color(0xFFF2F2F2) : const Color(0xFF111111),
+              isDark ? const Color(0xFFFFFFFF) : const Color(0xFF111111),
           cardBorderWidth: 3,
           headingFontFamily: 'Bangers',
         ),
@@ -424,7 +425,7 @@ class AppTheme {
       AppThemeVariant.aurora => 20,
       AppThemeVariant.dragonBall => 14, // chunky, energetyczne
       AppThemeVariant.pokemon => 18, // przyjazne, okrągławe
-      AppThemeVariant.manga => 4, // komiksowe panele — ostre jak na zegarkach
+      AppThemeVariant.manga => 0, // ostre panele jak bezel zegarka G-Shock
     };
   }
 
