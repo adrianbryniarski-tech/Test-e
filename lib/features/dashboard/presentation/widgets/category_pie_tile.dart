@@ -67,7 +67,7 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
       return PieChartSectionData(
         value: e.value.toDouble(),
         color: color,
-        radius: isTouched ? 56 : 48,
+        radius: isTouched ? 46 : 40,
         showTitle: false,
       );
     }).toList();
@@ -83,7 +83,7 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
             child: PieChart(
               PieChartData(
                 sections: sections,
-                centerSpaceRadius: 32,
+                centerSpaceRadius: 26,
                 sectionsSpace: 2,
                 pieTouchData: PieTouchData(
                   touchCallback: (event, response) {
@@ -102,6 +102,7 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
               ),
             ),
           ),
+          const SizedBox(width: 14),
           Expanded(
             flex: 4,
             child: Column(

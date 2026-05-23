@@ -69,7 +69,7 @@ class SettingsScreen extends ConsumerWidget {
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 0.95,
+              childAspectRatio: 1.7,
             ),
             itemCount: AppThemeVariant.values.length,
             itemBuilder: (context, index) {
@@ -239,12 +239,12 @@ class _ThemePreviewCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: preview.scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
@@ -254,68 +254,39 @@ class _ThemePreviewCard extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // 3 kolorowe kółka pokazujące paletę
             Row(
               children: [
                 _Dot(color: scheme.primary),
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
                 _Dot(color: scheme.secondary),
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
                 _Dot(color: scheme.tertiary),
                 const Spacer(),
                 if (isSelected)
                   Icon(
                     Icons.check_circle,
                     color: theme.colorScheme.primary,
-                    size: 20,
+                    size: 18,
                   ),
               ],
             ),
-            const SizedBox(height: 12),
-            // "Mini surface" — pokazuje jak wygląda Card
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: scheme.surface,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 18,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: scheme.primary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Container(
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: scheme.onSurface.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
+            const SizedBox(height: 8),
             Text(
               variant.label,
-              style: preview.textTheme.titleMedium?.copyWith(
+              style: preview.textTheme.titleSmall?.copyWith(
                 color: scheme.onSurface,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               variant.description,
               style: preview.textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
+                fontSize: 11,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -334,8 +305,8 @@ class _Dot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 14,
-      height: 14,
+      width: 12,
+      height: 12,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
