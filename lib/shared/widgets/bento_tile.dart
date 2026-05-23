@@ -44,7 +44,10 @@ class BentoTile extends ConsumerWidget {
             borderRadius: BorderRadius.circular(tileRadius),
             side: isComic
                 ? BorderSide(
-                    color: comicInk(variant, Theme.of(context).brightness),
+                    color: comicInk(
+                      variant,
+                      Theme.of(context).scaffoldBackgroundColor,
+                    ),
                     width: variant == AppThemeVariant.manga ? 3 : 2.5,
                   )
                 : BorderSide.none,

@@ -3,14 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/settings/application/theme_providers.dart';
 
-/// Kolor „tuszu" motywu komiksowego (obrys + cień) zależny od wariantu i
-/// jasności. Manga = czysta czerń/biel; Kredka = ciepły grafit/krem.
-Color comicInk(AppThemeVariant variant, Brightness brightness) {
-  final dark = brightness == Brightness.dark;
+/// Kolor „tuszu" motywu komiksowego (obrys + cień) dobrany do JASNOŚCI TŁA
+/// (a nie trybu) — dzięki temu czarne tło daje białe kontury nawet w trybie
+/// jasnym. Manga = czysta biel/czerń; Kredka = ciepły krem/grafit.
+Color comicInk(AppThemeVariant variant, Color background) {
+  final darkBg = background.computeLuminance() < 0.35;
   return switch (variant) {
     AppThemeVariant.manga =>
-      dark ? const Color(0xFFFFFFFF) : const Color(0xFF111111),
-    _ => dark ? const Color(0xFFFFE0C2) : const Color(0xFF231A12),
+      darkBg ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+    _ => darkBg ? const Color(0xFFFFE0C2) : const Color(0xFF231A12),
   };
 }
 
@@ -38,7 +39,7 @@ class ComicShadow extends ConsumerWidget {
         borderRadius: BorderRadius.circular(radius),
         boxShadow: [
           BoxShadow(
-            color: comicInk(variant, Theme.of(context).brightness),
+            color: comicInk(variant, Theme.of(context).scaffoldBackgroundColor),
             offset: const Offset(5, 5),
           ),
         ],
