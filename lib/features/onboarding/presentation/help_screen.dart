@@ -136,6 +136,13 @@ class HelpScreen extends StatelessWidget {
                   'ze średnią ceną zakupu.',
               'Wartość i zysk/strata liczą się po aktualnych kursach; '
                   'wykres pokazuje wartość portfela w czasie.',
+              'Sprzedałeś? Stuknij pozycję → „Sprzedaj / zapisz stratę". '
+                  'Możesz sprzedać całość albo część (np. pół bitcoina). '
+                  'Wpisz kwotę, którą odzyskałeś — albo od razu samą stratę. '
+                  'Apka policzy ostateczny wynik (zysk lub stratę) i pokaże '
+                  'go w „Historii realizacji".',
+              'Pomyłka? Stuknij wpis w historii → „Cofnij sprzedaż" '
+                  '— ilość wróci do portfela.',
             ],
           ),
           _HelpSection(

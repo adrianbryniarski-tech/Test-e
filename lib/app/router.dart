@@ -13,6 +13,7 @@ import 'package:nasz_budzet_domowy/features/household/presentation/join_househol
 import 'package:nasz_budzet_domowy/features/household/presentation/onboarding_choice_screen.dart';
 import 'package:nasz_budzet_domowy/features/investments/data/investment.dart';
 import 'package:nasz_budzet_domowy/features/investments/presentation/add_investment_screen.dart';
+import 'package:nasz_budzet_domowy/features/investments/presentation/sell_investment_screen.dart';
 import 'package:nasz_budzet_domowy/features/onboarding/presentation/help_screen.dart';
 import 'package:nasz_budzet_domowy/features/onboarding/presentation/whats_new_screen.dart';
 import 'package:nasz_budzet_domowy/features/settings/presentation/settings_screen.dart';
@@ -126,6 +127,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/investments/edit',
         builder: (context, state) =>
             AddInvestmentScreen(existing: state.extra as Investment?),
+      ),
+      GoRoute(
+        path: '/investments/sell',
+        builder: (context, state) => SellInvestmentScreen(
+          valuation: state.extra! as InvestmentValuation,
+        ),
       ),
       GoRoute(
         path: '/settings',

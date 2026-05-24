@@ -74,4 +74,93 @@ void main() {
       expect(map['purchased_at'], '2024-01-01');
     });
   });
+
+  group('InvestmentValuation z częściową sprzedażą', () {
+    final inv = Investment(
+      id: 'i1',
+      householdId: 'h1',
+      assetType: AssetType.crypto,
+      symbol: 'bitcoin',
+      ticker: 'BTC',
+      displayName: 'Bitcoin',
+      quantity: 1, // 1 BTC
+      buyPriceCents: 24000000, // 240 000 zł / szt.
+      createdAt: DateTime(2025, 3, 10),
+      purchasedAt: DateTime(2024),
+    );
+
+    test('bez sprzedaży → remaining = pełna ilość', () {
+      final v = InvestmentValuation(investment: inv, pricePln: 300000);
+      expect(v.remainingQuantity, 1);
+      expect(v.isFullyClosed, false);
+      expect(v.currentValuePln, 300000);
+      expect(v.profitPln, 60000); // 300k - 240k
+    });
+
+    test('po sprzedaży połowy → remaining i wartości liczone z połowy', () {
+      final v = InvestmentValuation(
+        investment: inv,
+        pricePln: 300000, // aktualnie 300 000 zł / szt.
+        soldQuantity: 0.5,
+      );
+      expect(v.remainingQuantity, 0.5);
+      expect(v.isFullyClosed, false);
+      expect(v.remainingBuyValuePln, 120000); // 0.5 × 240 000
+      expect(v.currentValuePln, 150000); // 0.5 × 300 000
+      expect(v.profitPln, 30000);
+      expect(v.isProfit, true);
+    });
+
+    test('sprzedane wszystko → fully closed, wartość 0', () {
+      final v = InvestmentValuation(
+        investment: inv,
+        pricePln: 300000,
+        soldQuantity: 1,
+      );
+      expect(v.remainingQuantity, 0);
+      expect(v.isFullyClosed, true);
+      expect(v.currentValuePln, 0);
+      expect(v.profitPln, 0);
+    });
+
+    test('sprzedane więcej niż jest → remaining nie schodzi poniżej 0', () {
+      final v = InvestmentValuation(
+        investment: inv,
+        pricePln: 300000,
+        soldQuantity: 1.5,
+      );
+      expect(v.remainingQuantity, 0);
+      expect(v.isFullyClosed, true);
+    });
+  });
+
+  group('InvestmentSale wynik realizacji', () {
+    InvestmentSale sale(int proceeds, int costBasis) => InvestmentSale(
+          id: 's1',
+          householdId: 'h1',
+          investmentId: 'i1',
+          quantity: 0.5,
+          proceedsCents: proceeds,
+          costBasisCents: costBasis,
+          soldAt: DateTime(2026, 5, 10),
+        );
+
+    test('odzyskane > koszt → zysk dodatni', () {
+      final s = sale(15000000, 12000000); // 150k vs 120k
+      expect(s.realizedPln, 30000);
+      expect(s.isProfit, true);
+    });
+
+    test('odzyskane < koszt → strata ujemna', () {
+      final s = sale(10000000, 12000000); // 100k vs 120k
+      expect(s.realizedPln, -20000);
+      expect(s.isProfit, false);
+    });
+
+    test('całkowita strata (odzyskane 0) → wynik = -koszt', () {
+      final s = sale(0, 12000000);
+      expect(s.realizedPln, -120000);
+      expect(s.isProfit, false);
+    });
+  });
 }

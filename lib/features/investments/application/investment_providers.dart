@@ -21,6 +21,28 @@ final investmentsProvider = StreamProvider<List<Investment>>((ref) {
   return ref.watch(investmentRepositoryProvider).watchAll(householdId);
 });
 
+/// Realizacje (sprzedaże) pozycji gospodarstwa (realtime).
+final investmentSalesProvider = StreamProvider<List<InvestmentSale>>((ref) {
+  final householdId = ref.watch(currentHouseholdIdProvider).value;
+  if (householdId == null) return Stream.value(const <InvestmentSale>[]);
+  return ref.watch(investmentRepositoryProvider).watchSales(householdId);
+});
+
+/// Łączny zrealizowany wynik w PLN (suma zysków/strat ze sprzedaży).
+final realizedResultProvider = Provider<double>((ref) {
+  final sales = ref.watch(investmentSalesProvider).value ?? const [];
+  return sales.fold<double>(0, (s, sale) => s + sale.realizedPln);
+});
+
+/// Mapa `investmentId → sprzedana ilość` (suma realizacji per pozycja).
+Map<String, double> _soldByInvestment(List<InvestmentSale> sales) {
+  final out = <String, double>{};
+  for (final s in sales) {
+    out[s.investmentId] = (out[s.investmentId] ?? 0) + s.quantity;
+  }
+  return out;
+}
+
 /// Snapshoty wartości portfela w czasie (realtime, do wykresu).
 final portfolioSnapshotsProvider =
     StreamProvider<List<PortfolioSnapshot>>((ref) {
@@ -44,14 +66,20 @@ final pricesProvider = FutureProvider<Map<String, double>>((ref) async {
   // (best-effort, nie blokuje gdy padnie)
   final householdId = ref.read(currentHouseholdIdProvider).value;
   if (householdId != null && prices.isNotEmpty) {
+    // Liczymy tylko część POZOSTAŁĄ (po odjęciu tego co już sprzedane).
+    final sold = _soldByInvestment(
+      ref.read(investmentSalesProvider).value ?? const [],
+    );
     var totalCents = 0;
     for (final inv in items) {
+      final remaining = inv.quantity - (sold[inv.id] ?? 0);
+      if (remaining <= 0) continue;
       final key =
           inv.assetType == AssetType.crypto ? inv.symbol : _metalKey(inv);
       final price = prices[key];
       final value = price == null
-          ? inv.buyValuePln
-          : inv.quantity * price;
+          ? remaining * inv.buyPriceCents / 100
+          : remaining * price;
       totalCents += (value * 100).round();
     }
     await ref.read(investmentRepositoryProvider).upsertSnapshot(
@@ -67,10 +95,17 @@ final investmentValuationsProvider =
     Provider<List<InvestmentValuation>>((ref) {
   final items = ref.watch(investmentsProvider).value ?? const [];
   final prices = ref.watch(pricesProvider).value ?? const {};
+  final sold = _soldByInvestment(
+    ref.watch(investmentSalesProvider).value ?? const [],
+  );
   final out = items.map((inv) {
     final key =
         inv.assetType == AssetType.crypto ? inv.symbol : _metalKey(inv);
-    return InvestmentValuation(investment: inv, pricePln: prices[key]);
+    return InvestmentValuation(
+      investment: inv,
+      pricePln: prices[key],
+      soldQuantity: sold[inv.id] ?? 0,
+    );
   }).toList()
     ..sort((a, b) => b.currentValuePln.compareTo(a.currentValuePln));
   return out;

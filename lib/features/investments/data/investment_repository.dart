@@ -99,6 +99,61 @@ class InvestmentRepository {
     }
   }
 
+  /// Strumień realizacji (sprzedaży) gospodarstwa (realtime).
+  Stream<List<InvestmentSale>> watchSales(String householdId) {
+    return supabase
+        .from('investment_sales')
+        .stream(primaryKey: ['id'])
+        .eq('household_id', householdId)
+        .order('sold_at')
+        .map((rows) => rows.map(InvestmentSale.fromJson).toList());
+  }
+
+  /// Zapisuje sprzedaż (całości lub części) pozycji [investment].
+  ///
+  /// `quantity`      — ile jednostek sprzedano.
+  /// `proceedsCents` — ile odzyskano łącznie w PLN (przy całkowitej
+  ///                   stracie = 0).
+  /// `soldAt`        — data sprzedaży.
+  /// Koszt zakupu sprzedanej części liczymy tu (snapshot), żeby wynik nie
+  /// zmienił się gdy później zmieni się średnia cena zakupu pozycji.
+  Future<InvestmentWriteResult> recordSale({
+    required Investment investment,
+    required double quantity,
+    required int proceedsCents,
+    required DateTime soldAt,
+  }) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      return const InvestmentWriteFailure('Brak sesji — zaloguj się.');
+    }
+    try {
+      final costBasisCents = (quantity * investment.buyPriceCents).round();
+      await supabase.from('investment_sales').insert({
+        'household_id': investment.householdId,
+        'investment_id': investment.id,
+        'created_by': user.id,
+        'quantity': quantity,
+        'proceeds_cents': proceedsCents,
+        'cost_basis_cents': costBasisCents,
+        'sold_at': investmentDateOnly(soldAt),
+      });
+      return const InvestmentWriteSuccess();
+    } on PostgrestException catch (e) {
+      return InvestmentWriteFailure('${e.code ?? "?"} ${e.message}');
+    }
+  }
+
+  /// Cofa zapisaną sprzedaż (przywraca sprzedaną ilość do pozycji).
+  Future<InvestmentWriteResult> deleteSale(String id) async {
+    try {
+      await supabase.from('investment_sales').delete().eq('id', id);
+      return const InvestmentWriteSuccess();
+    } on PostgrestException catch (e) {
+      return InvestmentWriteFailure(e.message);
+    }
+  }
+
   /// Strumień dziennych snapshotów wartości portfela (do wykresu).
   Stream<List<PortfolioSnapshot>> watchSnapshots(String householdId) {
     return supabase
