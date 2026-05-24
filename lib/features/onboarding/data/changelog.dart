@@ -25,6 +25,23 @@ class ChangelogEntry {
 
 const List<ChangelogEntry> kChangelog = [
   ChangelogEntry(
+    version: '2026-05-24',
+    date: '24 maja 2026',
+    title: 'Sprzedaż inwestycji i zapisywanie strat',
+    changes: [
+      'W „Inwestycjach" możesz teraz zapisać sprzedaż: stuknij pozycję → '
+          '„Sprzedaj / zapisz stratę". Sprzedasz całość albo część (np. pół '
+          'bitcoina) — reszta zostaje w portfelu.',
+      'Dwa sposoby na wynik: wpisz kwotę, którą odzyskałeś (apka sama '
+          'policzy zysk lub stratę), albo wpisz od razu samą stratę '
+          'w złotówkach.',
+      'Nowa „Historia realizacji" pokazuje każdą sprzedaż z jej wynikiem, '
+          'a u góry widać łączny zrealizowany zysk lub stratę.',
+      'Pomyłka? Stuknij wpis w historii i wybierz „Cofnij sprzedaż" — '
+          'sprzedana ilość wróci do portfela.',
+    ],
+  ),
+  ChangelogEntry(
     version: '2026-05-22',
     date: '22 maja 2026',
     title: 'Wygodniejszy głos, nowe wyglądy i podkategorie',

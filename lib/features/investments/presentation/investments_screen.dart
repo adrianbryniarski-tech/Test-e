@@ -36,6 +36,8 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
     final investments = ref.watch(investmentsProvider);
     final valuations = ref.watch(investmentValuationsProvider);
     final snapshots = ref.watch(portfolioSnapshotsProvider).value ?? const [];
+    final sales = ref.watch(investmentSalesProvider).value ?? const [];
+    final realizedResult = ref.watch(realizedResultProvider);
     final pricesAsync = ref.watch(pricesProvider);
     final theme = Theme.of(context);
     final fmt = NumberFormat.currency(
@@ -47,8 +49,12 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
     // Self-cleanup: gdy Realtime usunie pozycję, czyścimy ją z setu.
     final visibleIds = valuations.map((v) => v.investment.id).toSet();
     _locallyDeleted.removeWhere((id) => !visibleIds.contains(id));
+    // Otwarte aktywa = niesprzedane w całości i nieukryte lokalnie.
     final visibleValuations = valuations
-        .where((v) => !_locallyDeleted.contains(v.investment.id))
+        .where(
+          (v) =>
+              !v.isFullyClosed && !_locallyDeleted.contains(v.investment.id),
+        )
         .toList();
 
     // Sumy liczone z WIDOCZNYCH pozycji — dzięki temu nagłówek aktualizuje
@@ -57,9 +63,15 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
     var portfolioBuy = 0.0;
     for (final v in visibleValuations) {
       portfolioValue += v.currentValuePln;
-      portfolioBuy += v.investment.buyValuePln;
+      portfolioBuy += v.remainingBuyValuePln;
     }
     final portfolioProfit = portfolioValue - portfolioBuy;
+
+    // Nazwa aktywa po id — do historii realizacji (pozycja może być już
+    // w całości sprzedana, ale wiersz wciąż istnieje w investments).
+    final nameById = {
+      for (final v in valuations) v.investment.id: v.investment,
+    };
 
     return CustomScrollView(
       slivers: [
@@ -100,7 +112,7 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
             child: Center(child: InlineError(message: e.toString())),
           ),
           data: (items) {
-            if (visibleValuations.isEmpty) {
+            if (visibleValuations.isEmpty && sales.isEmpty) {
               return const SliverFillRemaining(child: _EmptyState());
             }
             return SliverList(
@@ -136,6 +148,10 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                             profit: portfolioProfit,
                             base: portfolioBuy,
                           ),
+                          if (sales.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            _RealizedLabel(result: realizedResult),
+                          ],
                           const SizedBox(height: 16),
                           PortfolioChart(snapshots: snapshots),
                         ],
@@ -143,15 +159,16 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-                  child: Text(
-                    'Twoje aktywa',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                if (visibleValuations.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                    child: Text(
+                      'Twoje aktywa',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
                 for (final v in visibleValuations)
                   _DismissibleValuationRow(
                     key: ValueKey('inv-${v.investment.id}'),
@@ -159,6 +176,23 @@ class _InvestmentsScreenState extends ConsumerState<InvestmentsScreen> {
                     onDeleteLocally: _hideLocally,
                     onDeleteFailed: _restoreLocally,
                   ),
+                if (sales.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                    child: Text(
+                      'Historia realizacji',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  for (final s in sales.reversed)
+                    _SaleRow(
+                      key: ValueKey('sale-${s.id}'),
+                      sale: s,
+                      investment: nameById[s.investmentId],
+                    ),
+                ],
                 const SizedBox(height: 96),
               ]),
             );
@@ -198,6 +232,171 @@ class _ProfitLabel extends StatelessWidget {
           style: TextStyle(color: color, fontWeight: FontWeight.w600),
         ),
       ],
+    );
+  }
+}
+
+/// Etykieta zrealizowanego (zabukowanego) wyniku ze sprzedaży.
+class _RealizedLabel extends StatelessWidget {
+  const _RealizedLabel({required this.result});
+  final double result;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final positive = result >= 0;
+    final color = positive ? AppTheme.incomeAccent : AppTheme.expenseAccent;
+    final fmt = NumberFormat.currency(
+      locale: 'pl_PL',
+      symbol: 'zł',
+      decimalDigits: 2,
+    );
+    return Row(
+      children: [
+        Icon(Icons.check_circle_outline, size: 16, color: color),
+        const SizedBox(width: 4),
+        Text(
+          'Zrealizowane: ${positive ? '+' : ''}${fmt.format(result)}',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Wiersz historii realizacji: nazwa aktywa, data, sprzedana ilość i wynik.
+/// Tap → menu z opcją cofnięcia (usuwa wpis, przywraca ilość do pozycji).
+class _SaleRow extends ConsumerWidget {
+  const _SaleRow({required this.sale, required this.investment, super.key});
+
+  final InvestmentSale sale;
+  final Investment? investment;
+
+  Future<void> _showActions(BuildContext context, WidgetRef ref) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const AppIcon(Icons.undo),
+              title: const Text('Cofnij sprzedaż'),
+              subtitle: const Text('Usuwa wpis i przywraca ilość do portfela'),
+              onTap: () {
+                Navigator.of(sheetCtx).pop();
+                _confirmUndo(context, ref);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmUndo(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Cofnąć sprzedaż?'),
+        content: const Text(
+          'Wpis zniknie z historii, a sprzedana ilość wróci do pozycji.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('Cofnij'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final result =
+        await ref.read(investmentRepositoryProvider).deleteSale(sale.id);
+    if (result is InvestmentWriteSuccess) {
+      ref.invalidate(pricesProvider);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Cofnięto sprzedaż')),
+      );
+    } else if (result is InvestmentWriteFailure) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Nie udało się cofnąć: ${result.message}')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final fmt = NumberFormat.currency(
+      locale: 'pl_PL',
+      symbol: 'zł',
+      decimalDigits: 2,
+    );
+    final dateFmt = DateFormat('d.MM.yyyy', 'pl_PL');
+    final positive = sale.isProfit;
+    final color = positive ? AppTheme.incomeAccent : AppTheme.expenseAccent;
+    final name = investment?.displayName ?? 'Pozycja';
+    final unit = investment?.unitLabel ?? '';
+    final qtyStr = sale.quantity == sale.quantity.roundToDouble()
+        ? sale.quantity.toStringAsFixed(0)
+        : sale.quantity.toString();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ComicCard(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _showActions(context, ref),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  positive
+                      ? Icons.trending_up_rounded
+                      : Icons.trending_down_rounded,
+                  color: color,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Sprzedaż: $name',
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$qtyStr $unit • ${dateFmt.format(sale.soldAt)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${positive ? '+' : ''}${fmt.format(sale.realizedPln)}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -308,6 +507,15 @@ class _ValuationTile extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              leading: const AppIcon(Icons.sell_outlined),
+              title: const Text('Sprzedaj / zapisz stratę'),
+              subtitle: const Text('Całość lub część — zysk albo strata'),
+              onTap: () {
+                Navigator.of(sheetCtx).pop();
+                context.push('/investments/sell', extra: valuation);
+              },
+            ),
+            ListTile(
               leading: const AppIcon(Icons.edit_outlined),
               title: const Text('Edytuj pozycję'),
               onTap: () {
@@ -364,9 +572,11 @@ class _ValuationTile extends ConsumerWidget {
       decimalDigits: 2,
     );
     final dateFmt = DateFormat('d.MM.yyyy', 'pl_PL');
-    final qtyStr = inv.quantity == inv.quantity.roundToDouble()
-        ? inv.quantity.toStringAsFixed(0)
-        : inv.quantity.toString();
+    final remaining = valuation.remainingQuantity;
+    final qtyStr = remaining == remaining.roundToDouble()
+        ? remaining.toStringAsFixed(0)
+        : remaining.toString();
+    final partlySold = valuation.soldQuantity > 1e-9;
     final color =
         valuation.isProfit ? AppTheme.incomeAccent : AppTheme.expenseAccent;
 
@@ -394,7 +604,9 @@ class _ValuationTile extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$qtyStr ${inv.unitLabel}',
+                        partlySold
+                            ? '$qtyStr ${inv.unitLabel} (zostało)'
+                            : '$qtyStr ${inv.unitLabel}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
