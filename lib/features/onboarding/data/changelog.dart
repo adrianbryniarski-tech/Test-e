@@ -25,6 +25,18 @@ class ChangelogEntry {
 
 const List<ChangelogEntry> kChangelog = [
   ChangelogEntry(
+    version: '2026-05-30',
+    date: '30 maja 2026',
+    title: 'Wybór okresu znów działa na całym pulpicie',
+    changes: [
+      'Gdy zmieniasz okres na górze pulpitu (np. „Poprzedni" miesiąc albo '
+          'własny zakres), teraz przeliczają się WSZYSTKIE elementy — także '
+          'panel „Wydatki wg kategorii" i wykorzystanie limitów.',
+      'Wcześniej ta część potrafiła zostać na bieżącym miesiącu, mimo zmiany '
+          'okresu — już tak nie jest.',
+    ],
+  ),
+  ChangelogEntry(
     version: '2026-05-24',
     date: '24 maja 2026',
     title: 'Sprzedaż inwestycji i zapisywanie strat',

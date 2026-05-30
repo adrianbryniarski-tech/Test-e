@@ -69,6 +69,9 @@ class HelpScreen extends StatelessWidget {
                   'głównej.',
               'Słupki i linia pokazują wpływy/wydatki oraz jak rosło lub '
                   'malało saldo w czasie.',
+              'Wydatki wg kategorii (i wykorzystanie limitów) też liczą się '
+                  'dla wybranego okresu — zmień okres, a wszystko się '
+                  'przeliczy.',
             ],
           ),
           _HelpSection(

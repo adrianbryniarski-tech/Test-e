@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:nasz_budzet_domowy/features/budgets/application/budget_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
+import 'package:nasz_budzet_domowy/features/dashboard/application/dashboard_providers.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/data/dashboard_summary.dart';
 
 /// Treść pulpitu w stylu „Manga Neo-Brutalism" (wg dostarczonej makiety):
@@ -33,7 +33,7 @@ class MangaDashboardBody extends ConsumerWidget {
     final usage = income > 0 ? (expense / income).clamp(0.0, 1.0) : 0.0;
     final usagePct = (usage * 100).round();
 
-    final progress = ref.watch(monthlyBudgetProgressProvider);
+    final progress = ref.watch(periodBudgetProgressProvider);
     final cats = <String, String>{
       for (final c in ref.watch(categoriesProvider).value ?? const <Category>[])
         c.id: c.name,
