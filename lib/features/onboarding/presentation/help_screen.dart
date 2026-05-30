@@ -61,7 +61,12 @@ class HelpScreen extends StatelessWidget {
             steps: [
               'Pulpit to Wasz szybki podgląd pieniędzy w wybranym okresie.',
               'Na górze wybierasz okres (ten miesiąc, 3 miesiące, rok…) — '
-                  'wszystkie wykresy dopasowują się do niego.',
+                  'wszystkie wykresy dopasowują się do niego. Pod chipami '
+                  'widać napis „Pokazuję: …" z dokładnym zakresem dat, więc '
+                  'zawsze wiesz, co liczysz.',
+              '„Własny" otwiera kalendarz — zaznacz pierwszy i ostatni dzień '
+                  '(np. jeden tydzień), a pulpit policzy tylko ten przedział. '
+                  'Wybrane daty pokażą się wprost na chipie.',
               'Saldo = dochody minus wydatki. Kolor/strzałka pokazuje, czy '
                   'jest lepiej czy gorzej niż w poprzednim takim okresie.',
               'Kółko (wykres kołowy) pokazuje, na co idą pieniądze wg '

@@ -101,7 +101,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ],
           bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(56),
+            preferredSize: Size.fromHeight(74),
             child: Padding(
               padding: EdgeInsets.only(bottom: 8),
               child: DateRangeBar(),

@@ -27,13 +27,15 @@ const List<ChangelogEntry> kChangelog = [
   ChangelogEntry(
     version: '2026-05-30',
     date: '30 maja 2026',
-    title: 'Wybór okresu znów działa na całym pulpicie',
+    title: 'Wybór okresu — czytelniej i na całym pulpicie',
     changes: [
-      'Gdy zmieniasz okres na górze pulpitu (np. „Poprzedni" miesiąc albo '
-          'własny zakres), teraz przeliczają się WSZYSTKIE elementy — także '
-          'panel „Wydatki wg kategorii" i wykorzystanie limitów.',
-      'Wcześniej ta część potrafiła zostać na bieżącym miesiącu, mimo zmiany '
-          'okresu — już tak nie jest.',
+      'Pod chipami okresu pojawił się napis „Pokazuję: …" z dokładnym '
+          'zakresem dat — od razu widać, jaki okres liczysz. A gdy wybierzesz '
+          '„Własny", wybrane daty pokazują się wprost na chipie.',
+      'Gdy zmieniasz okres (np. „Poprzedni" miesiąc albo własny tydzień), '
+          'przeliczają się WSZYSTKIE elementy — także panel „Wydatki wg '
+          'kategorii" i wykorzystanie limitów (wcześniej ta część potrafiła '
+          'zostać na bieżącym miesiącu).',
     ],
   ),
   ChangelogEntry(
