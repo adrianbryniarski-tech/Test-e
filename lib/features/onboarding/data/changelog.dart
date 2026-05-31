@@ -25,6 +25,19 @@ class ChangelogEntry {
 
 const List<ChangelogEntry> kChangelog = [
   ChangelogEntry(
+    version: '2026-05-31',
+    date: '31 maja 2026',
+    title: 'Adresy członków + odzyskiwanie hasła',
+    changes: [
+      'W Ustawieniach → „Gospodarstwo" w sekcji „Członkowie" widać teraz '
+          'adresy e-mail osób w gospodarstwie (zamiast samych '
+          'identyfikatorów). Łatwo sprawdzić, na jaki email ktoś się logował.',
+      'Na ekranie logowania pojawiło się „Nie pamiętam hasła" — przychodzi '
+          '6-cyfrowy kod na maila, wpisujesz go i ustawiasz nowe hasło. '
+          'Bez czekania na administratora.',
+    ],
+  ),
+  ChangelogEntry(
     version: '2026-05-30',
     date: '30 maja 2026',
     title: 'Wybór okresu — czytelniej i na całym pulpicie',

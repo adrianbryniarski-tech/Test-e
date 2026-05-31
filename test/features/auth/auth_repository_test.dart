@@ -22,6 +22,7 @@ void main() {
             AuthInvalidCredentials() => 'bad-creds',
             AuthEmailAlreadyExists() => 'exists',
             AuthWeakPassword() => 'weak',
+            AuthInvalidOtp() => 'bad-otp',
             AuthGenericFailure(:final message) => 'fail:$message',
           };
 
@@ -29,6 +30,7 @@ void main() {
       expect(describe(const AuthInvalidCredentials()), 'bad-creds');
       expect(describe(const AuthEmailAlreadyExists()), 'exists');
       expect(describe(const AuthWeakPassword()), 'weak');
+      expect(describe(const AuthInvalidOtp()), 'bad-otp');
       expect(describe(const AuthGenericFailure('x')), 'fail:x');
     });
   });

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nasz_budzet_domowy/features/auth/application/auth_providers.dart';
 import 'package:nasz_budzet_domowy/features/auth/data/auth_repository.dart';
+import 'package:nasz_budzet_domowy/features/auth/presentation/forgot_password_screen.dart';
 import 'package:nasz_budzet_domowy/features/onboarding/application/intro_providers.dart';
 import 'package:nasz_budzet_domowy/features/onboarding/presentation/intro_carousel.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/inline_error.dart';
@@ -69,6 +70,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       AuthEmailAlreadyExists() =>
         'Konto z tym emailem już istnieje. Wybierz "Zaloguj się".',
       AuthWeakPassword() => 'Hasło musi mieć co najmniej 6 znaków.',
+      AuthInvalidOtp() =>
+        'Kod resetu jest niepoprawny lub wygasł.',
       AuthGenericFailure(:final message) =>
         'Nie udało się: $message',
     };
@@ -201,6 +204,21 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   icon: isSignIn ? Icons.login : Icons.person_add_alt,
                   onPressed: _submit,
                 ),
+                if (isSignIn)
+                  Center(
+                    child: TextButton(
+                      onPressed: _submitting
+                          ? null
+                          : () => Navigator.of(context).push<void>(
+                                MaterialPageRoute(
+                                  builder: (_) => ForgotPasswordScreen(
+                                    initialEmail: _emailController.text.trim(),
+                                  ),
+                                ),
+                              ),
+                      child: const Text('Nie pamiętam hasła'),
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 Center(
                   child: Text(

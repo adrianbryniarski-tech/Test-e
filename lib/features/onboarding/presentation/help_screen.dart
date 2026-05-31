@@ -46,6 +46,28 @@ class HelpScreen extends StatelessWidget {
             ],
           ),
           _HelpSection(
+            emoji: '📧',
+            title: 'Kto jest w gospodarstwie (i na jaki email)',
+            steps: [
+              'Ustawienia → karta „Gospodarstwo".',
+              'W sekcji „Członkowie" zobaczysz adresy e-mail wszystkich '
+                  'osób w gospodarstwie — przyda się, gdy ktoś zapomni, na '
+                  'jaki email się logował.',
+            ],
+          ),
+          _HelpSection(
+            emoji: '🔒',
+            title: 'Nie pamiętasz hasła',
+            steps: [
+              'Na ekranie logowania stuknij „Nie pamiętam hasła".',
+              'Podaj email konta → przyjdzie 6-cyfrowy kod na maila.',
+              'Wpisz kod i ustaw nowe hasło. Po tym jesteś od razu '
+                  'zalogowany(a).',
+              'Nie znasz emaila? Druga osoba w gospodarstwie sprawdzi go '
+                  'w Ustawieniach → Gospodarstwo → Członkowie.',
+            ],
+          ),
+          _HelpSection(
             emoji: '➕',
             title: 'Jak dodać wydatek / dochód',
             steps: [

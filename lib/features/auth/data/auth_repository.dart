@@ -22,6 +22,11 @@ class AuthWeakPassword extends AuthResult {
   const AuthWeakPassword();
 }
 
+/// Kod resetu hasła błędny lub wygasły.
+class AuthInvalidOtp extends AuthResult {
+  const AuthInvalidOtp();
+}
+
 class AuthGenericFailure extends AuthResult {
   const AuthGenericFailure(this.message);
   final String message;
@@ -96,6 +101,47 @@ class AuthRepository {
     }
   }
 
+  /// Wysyła e-mail z 6-cyfrowym kodem resetu hasła (typ `recovery`).
+  ///
+  /// Świadomie NIE używamy magic-linków (przekierowują na Site URL =
+  /// localhost, nie działa na telefonie). Wymaga, by szablon e-mail
+  /// „Reset Password" w Supabase zawierał token `{{ .Token }}`.
+  Future<AuthResult> sendPasswordResetCode(String email) async {
+    try {
+      await supabase.auth.resetPasswordForEmail(email);
+      return const AuthSuccess();
+    } on AuthException catch (e) {
+      return _classifyAuthError(e);
+    } on Object catch (e) {
+      return AuthGenericFailure(e.toString());
+    }
+  }
+
+  /// Weryfikuje kod resetu (`recovery`) i ustawia nowe hasło. Po sukcesie
+  /// użytkownik ma aktywną sesję (jest zalogowany).
+  Future<AuthResult> resetPasswordWithCode({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    try {
+      final res = await supabase.auth.verifyOTP(
+        email: email,
+        token: code.trim(),
+        type: OtpType.recovery,
+      );
+      if (res.session == null) return const AuthInvalidOtp();
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+      return const AuthSuccess();
+    } on AuthException catch (e) {
+      return _classifyAuthError(e);
+    } on Object catch (e) {
+      return AuthGenericFailure(e.toString());
+    }
+  }
+
   Future<void> signOut() => supabase.auth.signOut();
 
   Session? get currentSession => supabase.auth.currentSession;
@@ -118,6 +164,13 @@ class AuthRepository {
     if (code == 'weak_password' ||
         msg.contains('password should be at least')) {
       return const AuthWeakPassword();
+    }
+    if (code == 'otp_expired' ||
+        code == 'otp_disabled' ||
+        msg.contains('token has expired') ||
+        msg.contains('invalid token') ||
+        msg.contains('otp')) {
+      return const AuthInvalidOtp();
     }
     return AuthGenericFailure(e.message);
   }
