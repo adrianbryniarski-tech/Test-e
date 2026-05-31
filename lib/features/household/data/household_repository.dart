@@ -118,6 +118,21 @@ class HouseholdRepository {
         .map((rows) => rows.map(HouseholdMember.fromJson).toList());
   }
 
+  /// Członkowie gospodarstwa RAZEM z e-mailem. Czyta przez RPC
+  /// `security definer` (migracja 0011), bo RLS na `auth.users` blokuje
+  /// zwykłego join'a. RPC oddaje e-maile tylko gdy wołający jest członkiem
+  /// tego gospodarstwa — brak wycieku obcych adresów.
+  Future<List<HouseholdMember>> membersWithEmail(String householdId) async {
+    final rows = await supabase.rpc<List<dynamic>>(
+      'household_members_with_email',
+      params: {'p_household_id': householdId},
+    );
+    return rows
+        .cast<Map<String, dynamic>>()
+        .map(HouseholdMember.fromJson)
+        .toList();
+  }
+
   /// Zwraca metadata gospodarstwa (nazwa) bez całej listy członków.
   Future<HouseholdInfo?> info(String householdId) async {
     try {
@@ -197,6 +212,7 @@ class HouseholdMember {
     required this.userId,
     required this.role,
     required this.joinedAt,
+    this.email,
   });
 
   factory HouseholdMember.fromJson(Map<String, dynamic> json) {
@@ -204,12 +220,19 @@ class HouseholdMember {
       userId: json['user_id'] as String,
       role: json['role'] as String,
       joinedAt: DateTime.parse(json['joined_at'] as String),
+      // Tylko z RPC `household_members_with_email`; stream realtime
+      // (`watchMembers`) e-maila nie zwraca → null.
+      email: json['email'] as String?,
     );
   }
 
   final String userId;
   final String role;
   final DateTime joinedAt;
+
+  /// E-mail członka — dostępny tylko gdy rekord pochodzi z
+  /// `membersWithEmail` (RPC). W strumieniu realtime jest `null`.
+  final String? email;
 
   bool get isOwner => role == 'owner';
 }

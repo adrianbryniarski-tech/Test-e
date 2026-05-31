@@ -31,7 +31,21 @@ final householdInfoProvider =
 /// Realtime INSERT przy dołączeniu nowego członka (migracja 0005 dodała
 /// `household_members` do publication `supabase_realtime`).
 final householdMembersProvider =
-    StreamProvider.family<List<HouseholdMember>, String>(
-        (ref, householdId) {
+    StreamProvider.family<List<HouseholdMember>, String>((ref, householdId) {
   return ref.watch(householdRepositoryProvider).watchMembers(householdId);
+});
+
+/// Mapa `user_id → email` członków gospodarstwa (przez RPC z migracji 0011).
+/// Wzbogaca listę członków o czytelne adresy — strumień realtime e-maila
+/// nie zwraca. Jednorazowy fetch; gdy się nie powiedzie, UI pokazuje UUID.
+final householdMemberEmailsProvider =
+    FutureProvider.family<Map<String, String>, String>(
+        (ref, householdId) async {
+  final members = await ref
+      .watch(householdRepositoryProvider)
+      .membersWithEmail(householdId);
+  return {
+    for (final m in members)
+      if (m.email != null) m.userId: m.email!,
+  };
 });

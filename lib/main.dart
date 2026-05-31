@@ -74,7 +74,8 @@ class _NaszBudzetDomowyAppState extends ConsumerState<NaszBudzetDomowyApp>
         // członkostwo było aktualne (mimo Realtime na household_members).
         ..invalidate(currentHouseholdIdProvider)
         ..invalidate(householdInfoProvider)
-        ..invalidate(householdMembersProvider);
+        ..invalidate(householdMembersProvider)
+        ..invalidate(householdMemberEmailsProvider);
     }
   }
 

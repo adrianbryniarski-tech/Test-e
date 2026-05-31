@@ -35,6 +35,7 @@ class SettingsScreen extends ConsumerWidget {
                 ..invalidate(currentHouseholdIdProvider)
                 ..invalidate(householdInfoProvider)
                 ..invalidate(householdMembersProvider)
+                ..invalidate(householdMemberEmailsProvider)
                 ..invalidate(activeInvitationsProvider);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -423,6 +424,9 @@ class _HouseholdInfoCard extends ConsumerWidget {
         }
         final infoAsync = ref.watch(householdInfoProvider(householdId));
         final membersAsync = ref.watch(householdMembersProvider(householdId));
+        final emails =
+            ref.watch(householdMemberEmailsProvider(householdId)).value ??
+                const <String, String>{};
         return ComicCard(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -493,10 +497,12 @@ class _HouseholdInfoCard extends ConsumerWidget {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    m.userId,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      fontFamily: 'monospace',
-                                    ),
+                                    emails[m.userId] ?? m.userId,
+                                    style: emails.containsKey(m.userId)
+                                        ? theme.textTheme.bodyMedium
+                                        : theme.textTheme.bodySmall?.copyWith(
+                                            fontFamily: 'monospace',
+                                          ),
                                   ),
                                 ),
                                 Text(
@@ -596,6 +602,7 @@ class _HouseholdInfoCard extends ConsumerWidget {
         ..invalidate(currentHouseholdIdProvider)
         ..invalidate(householdInfoProvider)
         ..invalidate(householdMembersProvider)
+        ..invalidate(householdMemberEmailsProvider)
         ..invalidate(activeInvitationsProvider);
       messenger.showSnackBar(
         const SnackBar(content: Text('Opuszczono gospodarstwo.')),
