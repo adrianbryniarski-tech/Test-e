@@ -30,11 +30,15 @@ void main() {
       'klasyczny pulpit: własny tydzień zawęża saldo i widać aktywny zakres',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
+    // Kotwiczymy dane w miesiącu sprzed 2 miesięcy — w pełni w przeszłości,
+    // a zakresy „własne" nie są cięte do dzisiaj → test jest deterministyczny
+    // niezależnie od daty uruchomienia (np. 1. dnia miesiąca).
     final now = DateTime.now();
+    final m = DateTime(now.year, now.month - 2);
     final txs = [
-      _tx(10000, DateTime(now.year, now.month, 3, 12)),
-      _tx(20000, DateTime(now.year, now.month, 12, 12)),
-      _tx(40000, DateTime(now.year, now.month, 25, 12)),
+      _tx(10000, DateTime(m.year, m.month, 3, 12)),
+      _tx(20000, DateTime(m.year, m.month, 12, 12)),
+      _tx(40000, DateTime(m.year, m.month, 25, 12)),
     ];
 
     final container = ProviderContainer(
@@ -59,16 +63,24 @@ void main() {
         .widgetList<Text>(find.byType(Text))
         .any((t) => (t.data ?? '').contains(s));
 
-    // Aktywny zakres jest widoczny na pasku.
+    // Aktywny zakres jest zawsze widoczny na pasku.
     expect(find.textContaining('Pokazuję:'), findsOneWidget);
-    // Cały miesiąc: 700,00 zł.
-    expect(money('700,00'), isTrue);
+
+    // Własny zakres = cały miesiąc docelowy → 100+200+400 = 700,00 zł.
+    await container.read(dateRangeFilterProvider.notifier).selectCustom(
+          DateTimeRange(
+            start: DateTime(m.year, m.month),
+            end: DateTime(m.year, m.month, 28),
+          ),
+        );
+    await tester.pumpAndSettle();
+    expect(money('700,00'), isTrue, reason: 'cały miesiąc = 700 zł');
 
     // Własny tydzień obejmujący tylko transakcję z 12-ego (200 zł).
     await container.read(dateRangeFilterProvider.notifier).selectCustom(
           DateTimeRange(
-            start: DateTime(now.year, now.month, 9),
-            end: DateTime(now.year, now.month, 15),
+            start: DateTime(m.year, m.month, 9),
+            end: DateTime(m.year, m.month, 15),
           ),
         );
     await tester.pumpAndSettle();

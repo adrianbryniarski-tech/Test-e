@@ -91,9 +91,9 @@ class HelpScreen extends StatelessWidget {
                   'Wybrane daty pokażą się wprost na chipie.',
               'Saldo = dochody minus wydatki. Kolor/strzałka pokazuje, czy '
                   'jest lepiej czy gorzej niż w poprzednim takim okresie.',
-              'Kółko (wykres kołowy) pokazuje, na co idą pieniądze wg '
-                  'kategorii. Wydatki podkategorii liczą się do kategorii '
-                  'głównej.',
+              'Sekcja „Wydatki wg kategorii" pokazuje, na co idą pieniądze — '
+                  'każda kategoria z kwotą i udziałem (%). Wydatki '
+                  'podkategorii liczą się do kategorii głównej.',
               'Słupki i linia pokazują wpływy/wydatki oraz jak rosło lub '
                   'malało saldo w czasie.',
               'Wydatki wg kategorii (i wykorzystanie limitów) też liczą się '

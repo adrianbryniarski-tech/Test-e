@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:nasz_budzet_domowy/features/categories/application/category_providers.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/application/dashboard_providers.dart';
+import 'package:nasz_budzet_domowy/features/dashboard/data/category_breakdown.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/data/dashboard_summary.dart';
 
 /// Treść pulpitu w stylu „Manga Neo-Brutalism" (wg dostarczonej makiety):
@@ -34,10 +35,17 @@ class MangaDashboardBody extends ConsumerWidget {
     final usagePct = (usage * 100).round();
 
     final progress = ref.watch(periodBudgetProgressProvider);
+    final categoryList =
+        ref.watch(categoriesProvider).value ?? const <Category>[];
     final cats = <String, String>{
-      for (final c in ref.watch(categoriesProvider).value ?? const <Category>[])
-        c.id: c.name,
+      for (final c in categoryList) c.id: c.name,
     };
+    // Pełny podział wydatków wg kategorii dla wybranego okresu (niezależnie
+    // od limitów) — `expenseByCategoryId` jest już odfiltrowane do zakresu.
+    final spend = computeCategorySpend(
+      summary.expenseByCategoryId,
+      categoryList,
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
@@ -81,6 +89,28 @@ class MangaDashboardBody extends ConsumerWidget {
           const SizedBox(height: 22),
           _Panel(
             head: 'Wydatki wg kategorii',
+            child: spend.isEmpty
+                ? const Text(
+                    'Brak wydatków w tym okresie.',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
+                  )
+                : Column(
+                    children: [
+                      for (final s in spend.take(8))
+                        _SpendRow(
+                          name: s.name,
+                          amount: _zl(s.amountCents),
+                          pct: (s.fraction * 100).round(),
+                          fraction: spend.first.amountCents == 0
+                              ? 0
+                              : s.amountCents / spend.first.amountCents,
+                        ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 22),
+          _Panel(
+            head: 'Wykorzystanie limitów',
             child: progress.isEmpty
                 ? const Text(
                     'Brak limitów. Ustaw budżety kategorii.',
@@ -460,6 +490,77 @@ class _CatRow extends StatelessWidget {
                     child: over
                         ? const ColoredBox(color: _pink)
                         : _Halftone(ink: ink, dotSpacing: 6, dot: 0.22),
+                  ),
+                  Expanded(
+                    flex: (100 - (fraction * 100).round()).clamp(0, 99),
+                    child: const SizedBox(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Wiersz podziału wydatków — nazwa, kwota + %, raster proporcjonalny do
+/// największej kategorii w okresie.
+class _SpendRow extends StatelessWidget {
+  const _SpendRow({
+    required this.name,
+    required this.amount,
+    required this.pct,
+    required this.fraction,
+  });
+
+  final String name;
+  final String amount;
+  final int pct;
+  final double fraction;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = _inkFor(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  name.toUpperCase(),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: ink,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                    letterSpacing: .5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$amount ZŁ · $pct%',
+                style: TextStyle(color: ink, fontSize: 11),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          SizedBox(
+            height: 20,
+            child: DecoratedBox(
+              decoration:
+                  BoxDecoration(border: Border.all(color: ink, width: 2)),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: (fraction * 100).round().clamp(1, 100),
+                    child: _Halftone(ink: ink, dotSpacing: 6, dot: 0.22),
                   ),
                   Expanded(
                     flex: (100 - (fraction * 100).round()).clamp(0, 99),

@@ -25,6 +25,19 @@ class ChangelogEntry {
 
 const List<ChangelogEntry> kChangelog = [
   ChangelogEntry(
+    version: '2026-06-01',
+    date: '1 czerwca 2026',
+    title: 'Wydatki wg kategorii — z kwotami, dla wybranego okresu',
+    changes: [
+      'Na pulpicie widać pełny podział wydatków wg kategorii: kwota i '
+          'udział (%) dla każdej kategorii. W motywie klasycznym kwoty są '
+          'teraz w legendzie wykresu, a w motywie Manga jest osobny panel '
+          '„Wydatki wg kategorii" (niezależny od limitów).',
+      'Podział zawsze dotyczy okresu wybranego na górze — np. ustaw własny '
+          'tydzień, a zobaczysz wydatki tylko z tego tygodnia.',
+    ],
+  ),
+  ChangelogEntry(
     version: '2026-05-31',
     date: '31 maja 2026',
     title: 'Adresy członków + odzyskiwanie hasła',

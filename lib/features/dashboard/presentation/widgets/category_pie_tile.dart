@@ -1,7 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:nasz_budzet_domowy/app/theme.dart';
 import 'package:nasz_budzet_domowy/features/categories/data/category.dart';
+import 'package:nasz_budzet_domowy/features/dashboard/data/category_breakdown.dart';
 import 'package:nasz_budzet_domowy/features/dashboard/data/dashboard_summary.dart';
 import 'package:nasz_budzet_domowy/shared/widgets/bento_tile.dart';
 
@@ -28,18 +30,15 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final catMap = {for (final c in widget.categories) c.id: c};
+    // Podział wydatków wg kategorii dla AKTYWNEGO okresu (subkategorie
+    // doliczone do rodzica). `expenseByCategoryId` jest już odfiltrowane
+    // do wybranego zakresu dat.
+    final spend = computeCategorySpend(
+      widget.summary.expenseByCategoryId,
+      widget.categories,
+    );
 
-    // Wydatki podkategorii doliczamy do kategorii głównej — jeden wycinek
-    // na rodzica (Auto = Paliwo + Serwis + …).
-    final raw = widget.summary.expenseByCategoryId;
-    final data = <String, int>{};
-    raw.forEach((categoryId, cents) {
-      final key = catMap[categoryId]?.parentId ?? categoryId;
-      data[key] = (data[key] ?? 0) + cents;
-    });
-
-    if (data.isEmpty) {
+    if (spend.isEmpty) {
       return BentoTile(
         title: 'Wydatki wg kategorii',
         child: Center(
@@ -50,29 +49,30 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
         ),
       );
     }
-    final sorted = data.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final total = sorted.fold<int>(0, (s, e) => s + e.value);
+    final fmtMoney = NumberFormat.currency(
+      locale: 'pl_PL',
+      symbol: 'zł',
+      decimalDigits: 0,
+    );
 
-    final sections = sorted.asMap().entries.map((entry) {
+    final sections = spend.asMap().entries.map((entry) {
       final idx = entry.key;
-      final e = entry.value;
-      final cat = catMap[e.key];
-      final color = cat != null
-          ? CategoryPalette.fromHex(cat.colorHex)
+      final s = entry.value;
+      final color = s.colorHex != null
+          ? CategoryPalette.fromHex(s.colorHex!)
           : CategoryPalette.fallback;
       final isTouched = _touched == idx;
       // Bez procentów NA torcie — przy wąskich wycinkach zachodziły na
-      // wykres. Procenty pokazujemy czytelnie w legendzie obok nazwy.
+      // wykres. Kwoty i procenty pokazujemy w legendzie obok nazwy.
       return PieChartSectionData(
-        value: e.value.toDouble(),
+        value: s.amountCents.toDouble(),
         color: color,
         radius: isTouched ? 46 : 40,
         showTitle: false,
       );
     }).toList();
 
-    final legend = sorted.take(5).toList();
+    final legend = spend.take(5).toList();
 
     return BentoTile(
       title: 'Wydatki wg kategorii',
@@ -94,8 +94,7 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
                         _touched = null;
                         return;
                       }
-                      _touched = response
-                          .touchedSection!.touchedSectionIndex;
+                      _touched = response.touchedSection!.touchedSectionIndex;
                     });
                   },
                 ),
@@ -110,12 +109,11 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: legend.asMap().entries.map((entry) {
                 final idx = entry.key;
-                final e = entry.value;
-                final cat = catMap[e.key];
-                final color = cat != null
-                    ? CategoryPalette.fromHex(cat.colorHex)
+                final s = entry.value;
+                final color = s.colorHex != null
+                    ? CategoryPalette.fromHex(s.colorHex!)
                     : CategoryPalette.fallback;
-                final pct = total > 0 ? e.value / total * 100 : 0.0;
+                final pct = (s.fraction * 100).round();
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: GestureDetector(
@@ -135,15 +133,14 @@ class _CategoryPieTileState extends State<CategoryPieTile> {
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                            cat?.name ?? 'Nieznana',
-                            style:
-                                Theme.of(context).textTheme.labelSmall,
+                            s.name,
+                            style: Theme.of(context).textTheme.labelSmall,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${pct.toStringAsFixed(0)}%',
+                          '${fmtMoney.format(s.amountCents / 100)} · $pct%',
                           style: Theme.of(context)
                               .textTheme
                               .labelSmall

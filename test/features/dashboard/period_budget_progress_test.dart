@@ -30,7 +30,9 @@ Transaction _tx(int amount, TransactionType type, DateTime when) => Transaction(
 
 void main() {
   final now = DateTime.now();
-  final thisMonthDate = DateTime(now.year, now.month, 2, 12);
+  // 1. dnia miesiąca w południe — zawsze mieści się w zakresie „ten
+  // miesiąc" (cięty do dzisiaj), niezależnie od dnia uruchomienia testu.
+  final thisMonthDate = DateTime(now.year, now.month, 1, 12);
   final lastMonthDate = DateTime(now.year, now.month - 1, 10, 12);
   final thisMonthExp = _tx(3000, TransactionType.expense, thisMonthDate);
   final lastMonthExp = _tx(7000, TransactionType.expense, lastMonthDate);
